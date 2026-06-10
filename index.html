@@ -1,6 +1,8 @@
+```html
 <!DOCTYPE html>
 <html lang="th">
 <head>
+  <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -26,6 +28,12 @@
     .hero h1 {
       margin: 0;
       font-size: 26px;
+    }
+
+    .hero p {
+      margin: 8px 0 0;
+      font-size: 14px;
+      opacity: 0.95;
     }
 
     .container {
@@ -58,6 +66,13 @@
       margin-top: 18px;
     }
 
+    .button-row-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
     button {
       border: none;
       border-radius: 14px;
@@ -77,16 +92,16 @@
       background: #16a34a;
     }
 
+    .out {
+      background: #dc2626;
+    }
+
     .break-out {
       background: #f97316;
     }
 
     .break-in {
       background: #2563eb;
-    }
-
-    .out {
-      background: #dc2626;
     }
 
     .status {
@@ -117,6 +132,13 @@
     .hidden {
       display: none;
     }
+
+    .small {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
   </style>
 </head>
 
@@ -124,6 +146,7 @@
 
   <section class="hero">
     <h1>ลงเวลาเข้า-ออกงาน</h1>
+    <p>Attendance System</p>
   </section>
 
   <main class="container">
@@ -133,18 +156,24 @@
       <div id="employeeBox" class="info">รอเชื่อมต่อ LINE...</div>
 
       <div id="normalButtons" class="button-row hidden">
-        <button id="btnIn1" class="in" onclick="sendAttendance('IN')" disabled>เข้างาน</button>
-        <button id="btnOut1" class="out" onclick="sendAttendance('OUT')" disabled>ออกงาน</button>
+        <button id="btnInNormal" class="in" onclick="sendAttendance('IN')" disabled>เข้างาน</button>
+        <button id="btnOutNormal" class="out" onclick="sendAttendance('OUT')" disabled>ออกงาน</button>
       </div>
 
-      <div id="breakButtons" class="button-row hidden">
-        <button id="btnIn2" class="in" onclick="sendAttendance('IN')" disabled>เข้างาน</button>
+      <div id="breakButtons" class="button-row-4 hidden">
+        <button id="btnInBreak" class="in" onclick="sendAttendance('IN')" disabled>เข้างาน</button>
         <button id="btnBreakOut" class="break-out" onclick="sendAttendance('BREAK_OUT')" disabled>ออกพัก</button>
         <button id="btnBreakIn" class="break-in" onclick="sendAttendance('BREAK_IN')" disabled>กลับจากพัก</button>
-        <button id="btnOut2" class="out" onclick="sendAttendance('OUT')" disabled>ออกงาน</button>
+        <button id="btnOutBreak" class="out" onclick="sendAttendance('OUT')" disabled>ออกงาน</button>
       </div>
 
-      <div id="status" class="status">กำลังเริ่มระบบ...</div>
+      <div id="status" class="status">
+        กำลังเริ่มระบบ...
+      </div>
+
+      <div class="small">
+        หมายเหตุ: ระบบจะตรวจสอบ LINE User ID, GPS, สาขา และลำดับการลงเวลา
+      </div>
     </div>
   </main>
 
@@ -159,100 +188,124 @@
     let currentEmployee = null;
 
     window.addEventListener('load', function() {
+      showStatus('หน้าโหลดแล้ว กำลังเริ่ม LIFF...', '');
       initLiff();
     });
 
     async function initLiff() {
       try {
         disableButtons();
-        showStatus('กำลังเชื่อมต่อ LINE...', '');
+        hideAllButtons();
+
+        document.getElementById('lineBox').innerText = 'กำลังเชื่อมต่อ LINE...';
+        document.getElementById('employeeBox').innerText = 'กำลังตรวจสอบพนักงาน...';
 
         if (typeof liff === 'undefined') {
-          showStatus('LIFF SDK ไม่โหลด กรุณาเปิดผ่าน LINE อีกครั้ง', 'error');
+          showStatus(
+            'LIFF SDK ไม่โหลด\nกรุณาเช็ค Internet หรือเปิดผ่าน LINE อีกครั้ง',
+            'error'
+          );
+          return;
+        }
+
+        if (!LIFF_ID) {
+          showStatus('ยังไม่ได้ตั้งค่า LIFF ID', 'error');
+          return;
+        }
+
+        if (!GAS_WEB_APP_URL) {
+          showStatus('ยังไม่ได้ตั้งค่า Apps Script Web App URL', 'error');
           return;
         }
 
         await liff.init({ liffId: LIFF_ID });
 
+        isLiffReady = true;
+
         if (!liff.isLoggedIn()) {
-          showStatus('ยังไม่ได้ Login LINE กำลังพาไป Login...', 'warning');
+          showStatus('ยังไม่ได้ Login LINE\nกำลังพาไป Login...', 'warning');
           liff.login();
           return;
         }
+
+        showStatus('Login สำเร็จ กำลังอ่านข้อมูล LINE Profile...', '');
 
         const profile = await liff.getProfile();
 
         lineUserId = profile.userId;
         lineDisplayName = profile.displayName;
-        isLiffReady = true;
 
         document.getElementById('lineBox').innerText =
           'LINE Display Name: ' + lineDisplayName + '\n' +
           'LINE User ID: ' + lineUserId;
 
-        showStatus('อ่านข้อมูล LINE สำเร็จ กำลังตรวจสอบข้อมูลพนักงาน...', '');
+        showStatus('กำลังดึงข้อมูลพนักงาน...', '');
 
-        loadEmployeeProfile();
+        const profileResult = await getEmployeeProfile(lineUserId);
 
-      } catch (err) {
-        disableButtons();
-        showStatus('LIFF Error:\n' + err.message, 'error');
-      }
-    }
-
-    function loadEmployeeProfile() {
-      const params = {
-        action: 'getEmployeeProfile',
-        lineUserId: lineUserId
-      };
-
-      callAppsScriptJsonp(params, function(res) {
-        if (!res.success) {
+        if (!profileResult.success) {
           document.getElementById('employeeBox').innerText =
-            'ไม่พบข้อมูลพนักงาน กรุณาให้ HR เพิ่ม LINE User ID ในชีท Employees';
+            'ไม่พบข้อมูลพนักงาน หรือพนักงานไม่ Active';
 
-          showStatus('Error:\n' + res.message, 'error');
-          disableButtons();
+          showStatus('Error:\n' + profileResult.message, 'error');
           return;
         }
 
-        currentEmployee = res.employee;
+        currentEmployee = profileResult.employee;
+
+        const requireBreakClock =
+          currentEmployee.requireBreakClock === true ||
+          currentEmployee.requireBreakClock === 'TRUE';
 
         document.getElementById('employeeBox').innerText =
-          'พนักงาน: ' + currentEmployee.name + '\n' +
+          'ชื่อ: ' + currentEmployee.name + '\n' +
           'User ID: ' + currentEmployee.userId + '\n' +
-          'Office ID: ' + currentEmployee.assignedOfficeId + '\n' +
-          'Require Break Clock: ' + currentEmployee.requireBreakClock;
+          'Assigned Office ID: ' + currentEmployee.assignedOfficeId + '\n' +
+          'Require Break Clock: ' + requireBreakClock;
 
-        setupButtonsByEmployee(currentEmployee);
+        if (requireBreakClock) {
+          document.getElementById('breakButtons').classList.remove('hidden');
+        } else {
+          document.getElementById('normalButtons').classList.remove('hidden');
+        }
+
+        enableButtons();
         showStatus('พร้อมใช้งาน', 'success');
+
+      } catch (err) {
+        disableButtons();
+        hideAllButtons();
+
+        document.getElementById('lineBox').innerText = 'เชื่อมต่อ LINE ไม่สำเร็จ';
+        document.getElementById('employeeBox').innerText = 'กรุณาตรวจสอบ LIFF / Apps Script Setting';
+
+        showStatus(
+          'System Error:\n' + err.message +
+          '\n\nให้เช็ค:' +
+          '\n1. LIFF ID ถูกต้อง' +
+          '\n2. GAS_WEB_APP_URL ถูกต้อง' +
+          '\n3. Deploy Apps Script เป็น New version แล้ว' +
+          '\n4. เปิดผ่าน LIFF URL',
+          'error'
+        );
+      }
+    }
+
+    function getEmployeeProfile(lineUserId) {
+      return jsonpRequest(GAS_WEB_APP_URL, {
+        action: 'getEmployeeProfile',
+        lineUserId: lineUserId
       });
     }
 
-    function setupButtonsByEmployee(employee) {
-      const normalButtons = document.getElementById('normalButtons');
-      const breakButtons = document.getElementById('breakButtons');
-
-      normalButtons.classList.add('hidden');
-      breakButtons.classList.add('hidden');
-
-      if (employee.requireBreakClock === true) {
-        breakButtons.classList.remove('hidden');
-      } else {
-        normalButtons.classList.remove('hidden');
-      }
-
-      enableButtons();
-    }
-
     function sendAttendance(type) {
-      if (!isLiffReady || !lineUserId) {
-        showStatus('ยังไม่พบ LINE User ID กรุณาเปิดผ่าน LIFF URL', 'error');
+      if (!isLiffReady) {
+        showStatus('LIFF ยังไม่พร้อม กรุณารอสักครู่', 'error');
         return;
       }
 
-      if (!currentEmployee) {
-        showStatus('ยังไม่พบข้อมูลพนักงาน กรุณารอสักครู่ หรือให้ HR ตรวจ Employees', 'error');
+      if (!lineUserId) {
+        showStatus('ยังไม่พบ LINE User ID กรุณาเปิดผ่าน LINE / LIFF URL', 'error');
         return;
       }
 
@@ -265,46 +318,32 @@
       showStatus('กำลังขอตำแหน่ง GPS...', '');
 
       navigator.geolocation.getCurrentPosition(
-        function(position) {
-          showStatus('อ่าน GPS สำเร็จ กำลังบันทึกข้อมูล...', '');
+        async function(position) {
+          try {
+            const payload = {
+              action: 'submitAttendance',
+              lineUserId: lineUserId,
+              type: type,
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
 
-          const params = {
-            action: 'submitAttendance',
-            lineUserId: lineUserId,
-            type: type,
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
+            showStatus('อ่าน GPS สำเร็จ\nกำลังบันทึกข้อมูล...', '');
 
-          callAppsScriptJsonp(params, function(res) {
+            const res = await jsonpRequest(GAS_WEB_APP_URL, payload);
+
             enableButtons();
 
             if (res.success) {
-              let message = '';
-              message += 'บันทึกสำเร็จ\n';
-              message += 'ชื่อ: ' + res.name + '\n';
-              message += 'ประเภท: ' + displayType(res.type) + '\n';
-              message += 'วันที่: ' + res.date + '\n';
-              message += 'เวลา: ' + res.time + '\n';
-              message += 'สาขาประจำ: ' + res.assignedOffice + '\n';
-              message += 'สาขาใกล้สุด: ' + res.actualOffice + '\n';
-              message += 'ระยะห่าง: ' + res.distanceMeter + ' เมตร\n';
-              message += 'GPS: ' + res.gpsStatus + '\n';
-
-              if (res.type === 'OUT') {
-                message += 'ชั่วโมงทำงาน: ' + res.workHours + '\n';
-                message += 'ขาด: ' + res.roundedShortHours + '\n';
-                message += 'เกิน: ' + res.roundedOverHours + '\n';
-                message += 'ส่วนต่าง: ' + res.netDifferenceHours + '\n';
-                message += 'สถานะ: ' + res.workStatus + '\n';
-              }
-
-              showStatus(message, 'success');
-
+              showSuccessMessage(res);
             } else {
               showStatus('Error:\n' + res.message, 'error');
             }
-          });
+
+          } catch (err) {
+            enableButtons();
+            showStatus('System Error:\n' + err.message, 'error');
+          }
         },
         function(error) {
           enableButtons();
@@ -331,48 +370,133 @@
       );
     }
 
-    function callAppsScriptJsonp(params, callback) {
-      const callbackName = 'jsonpCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+    function showSuccessMessage(res) {
+      let message = '';
 
-      window[callbackName] = function(response) {
-        callback(response);
-        delete window[callbackName];
+      message += 'บันทึกสำเร็จ\n';
+      message += 'ชื่อ: ' + safeValue(res.name) + '\n';
+      message += 'ประเภท: ' + safeValue(res.type) + '\n';
+      message += 'วันที่: ' + safeValue(res.date) + '\n';
+      message += 'เวลา: ' + safeValue(res.time) + '\n';
+      message += 'สาขาประจำ: ' + safeValue(res.assignedOffice) + '\n';
+      message += 'สาขาใกล้สุด: ' + safeValue(res.actualOffice) + '\n';
+      message += 'ระยะห่าง: ' + safeValue(res.distanceMeter) + ' เมตร\n';
+      message += 'GPS: ' + safeValue(res.gpsStatus) + '\n';
 
-        if (script && script.parentNode) {
-          script.parentNode.removeChild(script);
+      if (res.type === 'OUT') {
+        message += '\n';
+        message += 'สรุปเวลาทำงาน\n';
+        message += 'เวลาอยู่ในงานทั้งหมด: ' + displayHourMinute(res.grossHoursDisplay, res.grossHours) + '\n';
+
+        if (res.requireBreakClock === true || res.requireBreakClock === 'TRUE') {
+          message += 'เวลาพักจริง: ' + displayHourMinute(res.breakHoursDisplay, res.breakHours) + '\n';
+          message += 'พักเกินที่ถูกหัก: ' + displayHourMinute(res.excessBreakHoursDisplay, res.excessBreakHours) + '\n';
         }
-      };
 
-      params.callback = callbackName;
+        message += 'ชั่วโมงทำงานที่นับให้: ' + displayHourMinute(res.workHoursDisplay, res.workHours) + '\n';
+        message += 'ขาด: ' + displayHourMinute(res.roundedShortHoursDisplay, res.roundedShortHours) + '\n';
+        message += 'เกิน: ' + displayHourMinute(res.roundedOverHoursDisplay, res.roundedOverHours) + '\n';
+        message += 'ส่วนต่าง: ' + displayHourMinute(res.netDifferenceHoursDisplay, res.netDifferenceHours) + '\n';
+        message += 'สถานะ: ' + safeValue(res.workStatus) + '\n';
+      }
 
-      const query = Object.keys(params)
-        .map(function(key) {
-          return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
-        })
-        .join('&');
-
-      const script = document.createElement('script');
-      script.src = GAS_WEB_APP_URL + '?' + query;
-
-      script.onerror = function() {
-        enableButtons();
-        showStatus('ไม่สามารถเชื่อมต่อ Apps Script Backend ได้', 'error');
-        delete window[callbackName];
-
-        if (script && script.parentNode) {
-          script.parentNode.removeChild(script);
-        }
-      };
-
-      document.body.appendChild(script);
+      showStatus(message, 'success');
     }
 
-    function displayType(type) {
-      if (type === 'IN') return 'เข้างาน';
-      if (type === 'BREAK_OUT') return 'ออกพัก';
-      if (type === 'BREAK_IN') return 'กลับจากพัก';
-      if (type === 'OUT') return 'ออกงาน';
-      return type;
+    function jsonpRequest(url, params) {
+      return new Promise(function(resolve, reject) {
+        const callbackName =
+          'jsonpCallback_' +
+          Date.now() +
+          '_' +
+          Math.floor(Math.random() * 100000);
+
+        params.callback = callbackName;
+
+        const query = Object.keys(params)
+          .map(function(key) {
+            return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+          })
+          .join('&');
+
+        const script = document.createElement('script');
+        script.src = url + '?' + query;
+
+        const timeout = setTimeout(function() {
+          cleanup();
+          reject(new Error('Request timeout'));
+        }, 30000);
+
+        window[callbackName] = function(data) {
+          clearTimeout(timeout);
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = function() {
+          clearTimeout(timeout);
+          cleanup();
+          reject(new Error('JSONP request failed'));
+        };
+
+        function cleanup() {
+          try {
+            delete window[callbackName];
+          } catch (e) {
+            window[callbackName] = undefined;
+          }
+
+          if (script && script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
+
+        document.body.appendChild(script);
+      });
+    }
+
+    function displayHourMinute(displayValue, rawValue) {
+      if (displayValue !== undefined && displayValue !== null && displayValue !== '') {
+        return displayValue;
+      }
+
+      if (rawValue === undefined || rawValue === null || rawValue === '') {
+        return '-';
+      }
+
+      const numberHours = Number(rawValue);
+
+      if (isNaN(numberHours)) {
+        return String(rawValue);
+      }
+
+      const sign = numberHours < 0 ? '-' : '';
+      const absoluteHours = Math.abs(numberHours);
+      const totalMinutes = Math.round(absoluteHours * 60);
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+
+      if (h === 0 && m === 0) {
+        return '0 นาที';
+      }
+
+      if (h === 0) {
+        return sign + m + ' นาที';
+      }
+
+      if (m === 0) {
+        return sign + h + ' ชม.';
+      }
+
+      return sign + h + ' ชม. ' + m + ' นาที';
+    }
+
+    function safeValue(value) {
+      if (value === undefined || value === null || value === '') {
+        return '-';
+      }
+
+      return value;
     }
 
     function showStatus(message, type) {
@@ -399,7 +523,13 @@
         button.disabled = true;
       });
     }
+
+    function hideAllButtons() {
+      document.getElementById('normalButtons').classList.add('hidden');
+      document.getElementById('breakButtons').classList.add('hidden');
+    }
   </script>
 
 </body>
 </html>
+```
