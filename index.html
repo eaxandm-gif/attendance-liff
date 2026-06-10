@@ -292,10 +292,10 @@
               message += 'GPS: ' + res.gpsStatus + '\n';
 
               if (res.type === 'OUT') {
-                message += 'ชั่วโมงทำงาน: ' + (res.workHoursDisplay || res.workHours) + '\n';
-                message += 'ขาด: ' + (res.roundedShortHoursDisplay || res.roundedShortHours) + '\n';
-                message += 'เกิน: ' + (res.roundedOverHoursDisplay || res.roundedOverHours) + '\n';
-                message += 'ส่วนต่าง: ' + (res.netDifferenceHoursDisplay || res.netDifferenceHours) + '\n';
+                message += 'ชั่วโมงทำงาน: ' + res.workHours + '\n';
+                message += 'ขาด: ' + res.roundedShortHours + '\n';
+                message += 'เกิน: ' + res.roundedOverHours + '\n';
+                message += 'ส่วนต่าง: ' + res.netDifferenceHours + '\n';
                 message += 'สถานะ: ' + res.workStatus + '\n';
               }
 
