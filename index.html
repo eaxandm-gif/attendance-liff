@@ -171,7 +171,7 @@
       </div>
 
       <div class="small">
-        หมายเหตุ: ระบบจะตรวจสอบ LINE User ID, GPS, สาขา และลำดับการลงเวลา
+        หมายเหตุ: ระบบอนุญาตให้ลงเวลาผ่าน LINE บนมือถือเท่านั้น และจะตรวจสอบ LINE User ID, GPS, สาขา และลำดับการลงเวลา
       </div>
     </div>
   </main>
@@ -218,6 +218,45 @@
         }
 
         await liff.init({ liffId: LIFF_ID });
+
+        /**
+         * =========================
+         * BLOCK NOTEBOOK / DESKTOP
+         * =========================
+         *
+         * ต้องเปิดผ่าน LINE app เท่านั้น
+         * และต้องเป็นอุปกรณ์มือถือ / tablet เท่านั้น
+         */
+
+        if (!liff.isInClient()) {
+          document.getElementById('lineBox').innerText = 'เปิดไม่ถูกช่องทาง';
+          document.getElementById('employeeBox').innerText = 'กรุณาเปิดลิงก์นี้ผ่าน LINE บนมือถือเท่านั้น';
+
+          showStatus(
+            'ไม่สามารถลงเวลาผ่าน Browser / Notebook / Desktop ได้\n\n' +
+            'กรุณาเปิดผ่าน LINE app บนมือถือของพนักงานเองเท่านั้น',
+            'error'
+          );
+          return;
+        }
+
+        const userAgent = navigator.userAgent || '';
+        const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
+        const isDesktopLike =
+          /Windows NT|Macintosh|X11|Linux x86_64/i.test(userAgent) &&
+          !/Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
+
+        if (!isMobileDevice || isDesktopLike) {
+          document.getElementById('lineBox').innerText = 'อุปกรณ์ไม่ถูกต้อง';
+          document.getElementById('employeeBox').innerText = 'ระบบไม่อนุญาตให้ลงเวลาผ่าน Notebook / Desktop';
+
+          showStatus(
+            'ระบบอนุญาตให้ลงเวลาผ่านมือถือเท่านั้น\n\n' +
+            'ไม่สามารถใช้ Notebook, Desktop, LINE Desktop, Chrome หรือ Safari บนคอมพิวเตอร์ลงเวลาได้',
+            'error'
+          );
+          return;
+        }
 
         isLiffReady = true;
 
@@ -284,7 +323,7 @@
           '\n1. LIFF ID ถูกต้อง' +
           '\n2. GAS_WEB_APP_URL ถูกต้อง' +
           '\n3. Deploy Apps Script เป็น New version แล้ว' +
-          '\n4. เปิดผ่าน LIFF URL',
+          '\n4. เปิดผ่าน LIFF URL บนมือถือ',
           'error'
         );
       }
@@ -531,4 +570,3 @@
 
 </body>
 </html>
-```
