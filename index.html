@@ -336,6 +336,13 @@
       });
     }
 
+    function getTodayAttendanceStatus() {
+      return jsonpRequest(GAS_WEB_APP_URL, {
+        action: 'getTodayAttendanceStatus',
+        lineUserId: lineUserId
+      });
+    }
+
     function sendAttendance(type) {
       if (!isLiffReady) {
         showStatus('LIFF ยังไม่พร้อม กรุณารอสักครู่', 'error');
@@ -363,7 +370,8 @@
               lineUserId: lineUserId,
               type: type,
               lat: position.coords.latitude,
-              lng: position.coords.longitude
+              lng: position.coords.longitude,
+              gpsAccuracy: position.coords.accuracy
             };
 
             showStatus('อ่าน GPS สำเร็จ\nกำลังบันทึกข้อมูล...', '');
@@ -379,6 +387,21 @@
             }
 
           } catch (err) {
+            // The request may time out after GAS has already saved the OUT row.
+            // For OUT, verify today's stored attendance before showing an error.
+            if (type === 'OUT') {
+              try {
+                const stored = await getTodayAttendanceStatus();
+                enableButtons();
+                if (stored && stored.success && stored.hasOut) {
+                  showSuccessMessage(stored);
+                  return;
+                }
+              } catch (recoveryError) {
+                // Fall through to the original error below.
+              }
+            }
+
             enableButtons();
             showStatus('System Error:\n' + err.message, 'error');
           }
@@ -411,19 +434,26 @@
     function showSuccessMessage(res) {
       let message = '';
 
-      message += 'บันทึกสำเร็จ\n';
-      message += 'ชื่อ: ' + safeValue(res.name) + '\n';
-      message += 'ประเภท: ' + safeValue(res.type) + '\n';
-      message += 'วันที่: ' + safeValue(res.date) + '\n';
-      message += 'เวลา: ' + safeValue(res.time) + '\n';
-      message += 'สาขาประจำ: ' + safeValue(res.assignedOffice) + '\n';
-      message += 'สาขาใกล้สุด: ' + safeValue(res.actualOffice) + '\n';
-      message += 'ระยะห่าง: ' + safeValue(res.distanceMeter) + ' เมตร\n';
-      message += 'GPS: ' + safeValue(res.gpsStatus) + '\n';
+      if (res.duplicateAlreadyRecorded === true) {
+        message += '✅ การออกงานของคุณได้รับการบันทึกแล้ว\n';
+      } else {
+        message += '✅ บันทึกสำเร็จ\n';
+      }
 
-      if (res.type === 'OUT') {
-        message += '\n';
-        message += 'สรุปเวลาทำงาน\n';
+      message += 'ชื่อ: ' + safeValue(res.name) + '\n';
+      message += 'วันที่: ' + safeValue(res.date) + '\n';
+
+      if (res.type === 'OUT' || res.hasOut === true) {
+        message += '\n🕒 ข้อมูลเข้า–ออกงานวันนี้\n';
+        message += 'เข้างาน: ' + safeValue(res.checkInTime) + '\n';
+
+        if (res.requireBreakClock === true || res.requireBreakClock === 'TRUE') {
+          message += 'ออกพัก: ' + safeValue(res.breakOutTime) + '\n';
+          message += 'กลับจากพัก: ' + safeValue(res.breakInTime) + '\n';
+        }
+
+        message += 'ออกงาน: ' + safeValue(res.checkOutTime || res.time) + '\n';
+        message += '\n📊 สรุปเวลาทำงาน\n';
         message += 'เวลาอยู่ในงานทั้งหมด: ' + displayHourMinute(res.grossHoursDisplay, res.grossHours) + '\n';
 
         if (res.requireBreakClock === true || res.requireBreakClock === 'TRUE') {
@@ -436,6 +466,13 @@
         message += 'เกิน: ' + displayHourMinute(res.roundedOverHoursDisplay, res.roundedOverHours) + '\n';
         message += 'ส่วนต่าง: ' + displayHourMinute(res.netDifferenceHoursDisplay, res.netDifferenceHours) + '\n';
         message += 'สถานะ: ' + safeValue(res.workStatus) + '\n';
+      } else {
+        message += 'ประเภท: ' + safeValue(res.type) + '\n';
+        message += 'เวลา: ' + safeValue(res.time) + '\n';
+        message += 'สาขาประจำ: ' + safeValue(res.assignedOffice) + '\n';
+        message += 'สาขาใกล้สุด: ' + safeValue(res.actualOffice) + '\n';
+        message += 'ระยะห่าง: ' + safeValue(res.distanceMeter) + ' เมตร\n';
+        message += 'GPS: ' + safeValue(res.gpsStatus) + '\n';
       }
 
       showStatus(message, 'success');
