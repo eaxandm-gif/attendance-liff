@@ -374,7 +374,7 @@
               gpsAccuracy: position.coords.accuracy
             };
 
-            showStatus('อ่าน GPS สำเร็จ\nกำลังบันทึกข้อมูล...', '');
+            showStatus('กำลังบันทึกเวลา...', '');
 
             const res = await jsonpRequest(GAS_WEB_APP_URL, payload);
 
@@ -435,8 +435,8 @@
         },
         {
           enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0
+          timeout: 8000,
+          maximumAge: 15000
         }
       );
     }
@@ -580,8 +580,8 @@
 
         const timeout = setTimeout(function() {
           cleanup();
-          reject(new Error('Request timeout'));
-        }, 30000);
+          reject(new Error('ระบบใช้เวลาประมวลผลเกิน 25 วินาที'));
+        }, 25000);
 
         window[callbackName] = function(data) {
           clearTimeout(timeout);
