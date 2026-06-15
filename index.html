@@ -380,30 +380,40 @@
 
             enableButtons();
 
-            if (res.success) {
+            if (res && res.success) {
               showSuccessMessage(res);
-            } else {
-              showStatus('Error:\n' + res.message, 'error');
+              return;
             }
+
+            // A row may already be saved even when the response object is
+            // incomplete or reports an error. Verify the sheet before showing
+            // an error to the employee.
+            const recovered = await recoverAttendanceResult(type);
+            if (recovered) {
+              showSuccessMessage(recovered);
+              return;
+            }
+
+            showStatus(
+              'เกิดข้อผิดพลาด:\n' + getServerMessage(res),
+              'error'
+            );
 
           } catch (err) {
-            // The request may time out after GAS has already saved the OUT row.
-            // For OUT, verify today's stored attendance before showing an error.
-            if (type === 'OUT') {
-              try {
-                const stored = await getTodayAttendanceStatus();
-                enableButtons();
-                if (stored && stored.success && stored.hasOut) {
-                  showSuccessMessage(stored);
-                  return;
-                }
-              } catch (recoveryError) {
-                // Fall through to the original error below.
-              }
+            // Network/JSONP timeout can occur after GAS has saved the row.
+            const recovered = await recoverAttendanceResult(type);
+            enableButtons();
+
+            if (recovered) {
+              showSuccessMessage(recovered);
+              return;
             }
 
-            enableButtons();
-            showStatus('System Error:\n' + err.message, 'error');
+            showStatus(
+              'ไม่สามารถยืนยันผลการบันทึกได้\n' +
+              getErrorMessage(err),
+              'error'
+            );
           }
         },
         function(error) {
@@ -431,11 +441,82 @@
       );
     }
 
+    async function recoverAttendanceResult(type) {
+      try {
+        const stored = await getTodayAttendanceStatus();
+
+        if (!stored || stored.success !== true) {
+          return null;
+        }
+
+        const recorded =
+          (type === 'IN' && stored.hasIn === true) ||
+          (type === 'BREAK_OUT' && stored.hasBreakOut === true) ||
+          (type === 'BREAK_IN' && stored.hasBreakIn === true) ||
+          (type === 'OUT' && stored.hasOut === true);
+
+        if (!recorded) {
+          return null;
+        }
+
+        stored.success = true;
+        stored.saved = true;
+        stored.recoveredAfterUncertainResponse = true;
+        stored.type = type;
+
+        if (type === 'OUT') {
+          stored.duplicateAlreadyRecorded = true;
+          stored.message = 'การออกงานของคุณได้รับการบันทึกแล้ว';
+        } else {
+          stored.message = 'ระบบตรวจสอบแล้วว่ารายการนี้ได้รับการบันทึกเรียบร้อย';
+          stored.time = getRecordedTimeForType(stored, type);
+        }
+
+        return stored;
+      } catch (recoveryError) {
+        console.error('Attendance recovery failed', recoveryError);
+        return null;
+      }
+    }
+
+    function getRecordedTimeForType(status, type) {
+      if (!status) return '';
+      if (type === 'IN') return status.checkInTime || status.latestEventTime || '';
+      if (type === 'BREAK_OUT') return status.breakOutTime || status.latestEventTime || '';
+      if (type === 'BREAK_IN') return status.breakInTime || status.latestEventTime || '';
+      if (type === 'OUT') return status.checkOutTime || status.latestEventTime || '';
+      return status.latestEventTime || '';
+    }
+
+    function getServerMessage(res) {
+      if (res && res.message !== undefined && res.message !== null) {
+        const message = String(res.message).trim();
+        if (message) return message;
+      }
+
+      return 'ระบบไม่ส่งรายละเอียดข้อผิดพลาดกลับมา กรุณาลองอีกครั้งหรือติดต่อ HR';
+    }
+
+    function getErrorMessage(err) {
+      if (err && err.message) {
+        const message = String(err.message).trim();
+        if (message) return message;
+      }
+
+      if (typeof err === 'string' && err.trim()) {
+        return err.trim();
+      }
+
+      return 'เกิดข้อผิดพลาดในการเชื่อมต่อกับระบบ';
+    }
+
     function showSuccessMessage(res) {
       let message = '';
 
       if (res.duplicateAlreadyRecorded === true) {
         message += '✅ การออกงานของคุณได้รับการบันทึกแล้ว\n';
+      } else if (res.recoveredAfterUncertainResponse === true) {
+        message += '✅ ตรวจสอบแล้วว่าบันทึกสำเร็จ\n';
       } else {
         message += '✅ บันทึกสำเร็จ\n';
       }
@@ -528,6 +609,14 @@
 
         document.body.appendChild(script);
       });
+    }
+
+    function attendanceTypeLabel(type) {
+      if (type === 'IN') return 'เข้างาน';
+      if (type === 'BREAK_OUT') return 'ออกพัก';
+      if (type === 'BREAK_IN') return 'กลับจากพัก';
+      if (type === 'OUT') return 'ออกงาน';
+      return safeValue(type);
     }
 
     function displayHourMinute(displayValue, rawValue) {
