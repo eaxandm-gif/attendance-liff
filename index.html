@@ -213,7 +213,7 @@
   <script>
     const LIFF_ID = '2010336238-Ub6d565R';
     const GAS_WEB_APP_URL =
-      'https://script.google.com/macros/s/AKfycbzQGNiftsptvD2HJiTlKMZbHrEh3rRIeQqwkcKorYDU0s0Bm1NAGGbOOlsPSlukUW0D/exec';
+      'https://script.google.com/macros/s/AKfycby1K1YERmjptPu8mtLsTuIswj4veb-myepAC_M6VRO92dYAwWCztKvxx8-EarPQeCRhBw/exec';
 
     const ACTIONS = {
       IN: { label: 'เข้างาน', className: 'action-in' },
@@ -303,7 +303,7 @@
       }
     }
 
-    async function refreshPageState(showLoading, preserveStatus) {
+    async function refreshPageState(showLoading) {
       if (!lineUserId) return null;
 
       if (showLoading) {
@@ -321,7 +321,7 @@
 
       currentPageState = result;
       currentEmployee = result.employee;
-      renderPageState(result, preserveStatus === true);
+      renderPageState(result);
 
       if (showLoading) {
         showStatus('อัปเดตสถานะล่าสุดแล้ว', 'success');
@@ -330,7 +330,7 @@
       return result;
     }
 
-    function renderPageState(pageState, preserveStatus) {
+    function renderPageState(pageState) {
       const employee = pageState.employee || {};
       const mode = employee.attendanceMode === 'MULTI_BRANCH'
         ? 'BA / หลายสาขา'
@@ -362,16 +362,14 @@
 
       renderActionButtons(pageState.allowedActions || []);
 
-      if (!preserveStatus) {
-        if (pageState.isLeave) {
-          showStatus(
-            'วันนี้ถูกบันทึกเป็น' + safeValue(pageState.leaveLabel) +
-            '\nหากต้องการลงเวลา กรุณาติดต่อ HR ให้แก้ตารางก่อน',
-            'warning'
-          );
-        } else if (!(pageState.allowedActions || []).length) {
-          showStatus('วันนี้ลงเวลาครบแล้ว', 'success');
-        }
+      if (pageState.isLeave) {
+        showStatus(
+          'วันนี้ถูกบันทึกเป็น' + safeValue(pageState.leaveLabel) +
+          '\nหากต้องการลงเวลา กรุณาติดต่อ HR ให้แก้ตารางก่อน',
+          'warning'
+        );
+      } else if (!(pageState.allowedActions || []).length) {
+        showStatus('วันนี้ลงเวลาครบแล้ว', 'success');
       }
     }
 
@@ -447,7 +445,7 @@
             }
 
             showSuccessMessage(response);
-            await refreshPageState(false, true);
+            await refreshPageState(false);
 
           } catch (err) {
             try {
@@ -495,7 +493,7 @@
     }
 
     async function recoverAttendanceResult(type, beforeEventCount) {
-      const pageState = await refreshPageState(false, true);
+      const pageState = await refreshPageState(false);
       const events = pageState && pageState.events ? pageState.events : [];
       const lastEvent = events.length ? events[events.length - 1] : null;
 
@@ -528,6 +526,9 @@
         name: pageState.employee.name,
         userId: pageState.employee.userId,
         actualOffice: lastEvent.office,
+        distanceMeter: lastEvent.distanceMeter,
+        gpsAccuracy: lastEvent.gpsAccuracy,
+        gpsStatus: lastEvent.gpsStatus,
         message: 'ตรวจสอบแล้วว่ารายการได้รับการบันทึก'
       };
     }
@@ -598,12 +599,9 @@
       } else {
         message += 'รายการ: ' + actionLabel(type) + '\n';
         message += 'เวลา: ' + safeValue(response.time) + '\n';
-        if (response.actualOffice) {
-          message += 'สาขา: ' + response.actualOffice + '\n';
-        }
-        if (response.distanceMeter !== undefined) {
-          message += 'ระยะห่าง: ' + safeValue(response.distanceMeter) + ' เมตร\n';
-        }
+        message += 'สาขาที่ตรวจพบ: ' + safeValue(response.actualOffice) + '\n';
+        message += 'ระยะห่าง: ' + safeValue(response.distanceMeter) + ' เมตร\n';
+        message += 'ความแม่นยำ GPS: ' + safeValue(response.gpsAccuracy) + ' เมตร\n';
       }
 
       showStatus(message, 'success');
