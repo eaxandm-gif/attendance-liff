@@ -439,12 +439,24 @@
               const recovered = await recoverAttendanceResult(type, beforeEventCount);
               if (recovered) {
                 showSuccessMessage(recovered);
+                await refreshPageState(false);
                 return;
               }
               throw new Error(getServerMessage(response));
             }
 
             showSuccessMessage(response);
+
+            // Change the available buttons immediately from the server response
+            // so a second tap cannot repeat the same event while the sheet refreshes.
+            if (Array.isArray(response.allowedActions)) {
+              currentPageState = currentPageState || {};
+              currentPageState.allowedActions = response.allowedActions;
+              renderActionButtons(response.allowedActions);
+            } else {
+              renderActionButtons([]);
+            }
+
             await refreshPageState(false);
 
           } catch (err) {
@@ -452,6 +464,7 @@
               const recovered = await recoverAttendanceResult(type, beforeEventCount);
               if (recovered) {
                 showSuccessMessage(recovered);
+                await refreshPageState(false);
                 return;
               }
             } catch (recoveryError) {
