@@ -335,9 +335,11 @@
       const mode = employee.attendanceMode === 'MULTI_BRANCH'
         ? 'BA / หลายสาขา'
         : 'พนักงานทั่วไป';
-      const scheduleText = pageState.isLeave
-        ? (pageState.leaveLabel || pageState.scheduleStatus)
-        : (pageState.scheduleStatus || 'WORK');
+      const scheduleText = pageState.isWfh
+        ? 'ทำงานจากที่บ้าน (WFH)'
+        : (pageState.isLeave
+          ? (pageState.leaveLabel || pageState.scheduleStatus)
+          : (pageState.scheduleStatus || 'WORK'));
 
       document.getElementById('employeeBox').textContent =
         'ชื่อ: ' + safeValue(employee.name) + '\n' +
@@ -362,7 +364,12 @@
 
       renderActionButtons(pageState.allowedActions || []);
 
-      if (pageState.isLeave) {
+      if (pageState.isWfh) {
+        showStatus(
+          '🏠 วันนี้ทำงานจากที่บ้าน (WFH)\nระบบนับเวลาทำงานให้ครบ 9 ชั่วโมงแล้ว ไม่ต้องลงเวลา',
+          'success'
+        );
+      } else if (pageState.isLeave) {
         showStatus(
           'วันนี้ถูกบันทึกเป็น' + safeValue(pageState.leaveLabel) +
           '\nหากต้องการลงเวลา กรุณาติดต่อ HR ให้แก้ตารางก่อน',
