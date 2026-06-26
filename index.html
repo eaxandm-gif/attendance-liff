@@ -242,6 +242,9 @@
     let currentEmployee = null;
     let currentPageState = null;
 
+    const TOKEN_RECOVERY_KEY = 'attendance_liff_token_recovery';
+    const TOKEN_RECOVERY_WINDOW_MS = 2 * 60 * 1000;
+
     window.addEventListener('load', function () {
       initLiff();
     });
@@ -285,6 +288,7 @@
         }
 
         const profile = await liff.getProfile();
+        clearTokenRecoveryState();
         lineUserId = profile.userId;
         lineDisplayName = profile.displayName;
 
@@ -295,12 +299,99 @@
         showStatus('พร้อมใช้งาน กรุณากดปุ่มตามสถานะที่แสดง', 'success');
 
       } catch (err) {
+        if (isRevokedOrExpiredTokenError(err)) {
+          const recovered = recoverLiffSession();
+          if (recovered) return;
+        }
+
         setInteractive(false);
         document.getElementById('lineBox').textContent = 'เชื่อมต่อระบบไม่สำเร็จ';
         document.getElementById('employeeBox').textContent =
           'กรุณาปิดหน้านี้แล้วเปิดผ่าน LINE อีกครั้ง';
         showStatus(getErrorMessage(err), 'error');
       }
+    }
+
+    function isRevokedOrExpiredTokenError(error) {
+      const message = getErrorMessage(error).toLowerCase();
+      return (
+        message.indexOf('access token revoked') >= 0 ||
+        message.indexOf('token revoked') >= 0 ||
+        message.indexOf('invalid access token') >= 0 ||
+        message.indexOf('access token expired') >= 0 ||
+        message.indexOf('token expired') >= 0 ||
+        message.indexOf('401') >= 0
+      );
+    }
+
+    function recoverLiffSession() {
+      const now = Date.now();
+      const lastAttempt = Number(sessionStorage.getItem(TOKEN_RECOVERY_KEY) || 0);
+
+      // Prevent endless logout/login loops if LINE keeps returning the same error.
+      if (lastAttempt && now - lastAttempt < TOKEN_RECOVERY_WINDOW_MS) {
+        setInteractive(false);
+        document.getElementById('lineBox').textContent = 'LINE Login หมดอายุ';
+        document.getElementById('employeeBox').textContent =
+          'กรุณาปิดหน้านี้ แล้วเปิดระบบใหม่จาก Rich Menu ใน LINE';
+        showStatus(
+          'ไม่สามารถสร้าง LINE Login ใหม่ได้อัตโนมัติ\n' +
+          'กรุณาปิดหน้านี้ แล้วเปิดระบบใหม่จาก LINE อีกครั้ง',
+          'error'
+        );
+        return false;
+      }
+
+      sessionStorage.setItem(TOKEN_RECOVERY_KEY, String(now));
+      setInteractive(false);
+      document.getElementById('lineBox').textContent = 'กำลังเชื่อมต่อ LINE ใหม่...';
+      document.getElementById('employeeBox').textContent =
+        'ไม่ต้องปิดหน้า ระบบกำลัง Login ใหม่ให้อัตโนมัติ';
+      showStatus('LINE Login หมดอายุ กำลังเชื่อมต่อใหม่...', 'warning');
+
+      try {
+        if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
+          liff.logout();
+        }
+      } catch (logoutError) {
+        console.warn('LIFF logout failed', logoutError);
+      }
+
+      window.setTimeout(function () {
+        try {
+          liff.login({ redirectUri: getCleanRedirectUri() });
+        } catch (loginError) {
+          console.error('LIFF login recovery failed', loginError);
+          window.location.replace(getCleanRedirectUri());
+        }
+      }, 300);
+
+      return true;
+    }
+
+    function clearTokenRecoveryState() {
+      try {
+        sessionStorage.removeItem(TOKEN_RECOVERY_KEY);
+      } catch (error) {
+        console.warn('Cannot clear token recovery state', error);
+      }
+    }
+
+    function getCleanRedirectUri() {
+      const url = new URL(window.location.href);
+      [
+        'code',
+        'state',
+        'liff.state',
+        'liffClientId',
+        'liffRedirectUri',
+        'error',
+        'error_description'
+      ].forEach(function (key) {
+        url.searchParams.delete(key);
+      });
+      url.hash = '';
+      return url.toString();
     }
 
     async function refreshPageState(showLoading) {
