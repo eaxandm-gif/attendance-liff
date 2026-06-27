@@ -317,6 +317,55 @@
       font-size: 14px;
     }
 
+    .unregistered-card {
+      margin-top: 12px;
+      padding: 16px;
+      border: 1px solid #fecaca;
+      border-radius: 14px;
+      background: #fff7f7;
+      color: #7f1d1d;
+      line-height: 1.6;
+    }
+
+    .unregistered-title {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .identity-row {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #fecaca;
+      word-break: break-all;
+    }
+
+    .identity-label {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 12px;
+      color: #991b1b;
+      font-weight: 700;
+    }
+
+    .identity-value {
+      font-size: 14px;
+      color: #111827;
+      font-weight: 700;
+    }
+
+    .copy-id-button {
+      width: 100%;
+      min-height: 46px;
+      margin-top: 12px;
+      background: #0f766e;
+      color: #ffffff;
+      box-shadow: none;
+      font-size: 14px;
+    }
+
   </style>
 </head>
 
@@ -464,12 +513,95 @@
           if (recovered) return;
         }
 
+        if (isEmployeeNotFoundError(err) && lineUserId) {
+          showUnregisteredEmployee();
+          return;
+        }
+
         setInteractive(false);
         document.getElementById('lineBox').textContent = 'เชื่อมต่อระบบไม่สำเร็จ';
         document.getElementById('employeeBox').textContent =
           'กรุณาปิดหน้านี้แล้วเปิดผ่าน LINE อีกครั้ง';
         showStatus(getErrorMessage(err), 'error');
       }
+    }
+
+    function isEmployeeNotFoundError(error) {
+      const message = getErrorMessage(error).toLowerCase();
+      return (
+        message.indexOf('employee not found') >= 0 ||
+        message.indexOf('not found or inactive') >= 0 ||
+        message.indexOf('ไม่พบพนักงาน') >= 0 ||
+        message.indexOf('พนักงานไม่ได้เปิดใช้งาน') >= 0
+      );
+    }
+
+    function showUnregisteredEmployee() {
+      setInteractive(false);
+      currentEmployee = null;
+      currentPageState = null;
+
+      document.getElementById('lineBox').textContent =
+        'เชื่อมต่อ LINE สำเร็จ: ' + safeValue(lineDisplayName);
+
+      const employeeBox = document.getElementById('employeeBox');
+      employeeBox.innerHTML =
+        '<div class="unregistered-card">' +
+          '<div class="unregistered-title">ยังไม่พบข้อมูลพนักงานในระบบ</div>' +
+          '<div>กรุณาส่งข้อมูลด้านล่างให้ผู้ดูแลระบบเพื่อลงทะเบียน</div>' +
+          '<div class="identity-row">' +
+            '<span class="identity-label">ชื่อ LINE</span>' +
+            '<span class="identity-value">' + escapeHtml(lineDisplayName || '-') + '</span>' +
+          '</div>' +
+          '<div class="identity-row">' +
+            '<span class="identity-label">LINE User ID</span>' +
+            '<span class="identity-value" id="newEmployeeLineUserId">' +
+              escapeHtml(lineUserId || '-') +
+            '</span>' +
+          '</div>' +
+          '<button type="button" class="copy-id-button" onclick="copyLineUserId()">' +
+            'คัดลอก LINE User ID' +
+          '</button>' +
+        '</div>';
+
+      document.getElementById('stateBox').classList.add('hidden');
+      document.getElementById('actionButtons').classList.add('hidden');
+      document.getElementById('refreshButton').classList.remove('hidden');
+      document.getElementById('todaySection').classList.add('hidden');
+      document.getElementById('monthlySection').classList.add('hidden');
+
+      showStatus(
+        'ยังไม่สามารถลงเวลาได้จนกว่าผู้ดูแลระบบจะเพิ่มพนักงานและเปิดใช้งานบัญชี',
+        'warning'
+      );
+    }
+
+    async function copyLineUserId() {
+      if (!lineUserId) return;
+      try {
+        await navigator.clipboard.writeText(lineUserId);
+        showStatus('คัดลอก LINE User ID แล้ว', 'success');
+      } catch (error) {
+        const input = document.createElement('textarea');
+        input.value = lineUserId;
+        input.setAttribute('readonly', '');
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showStatus('คัดลอก LINE User ID แล้ว', 'success');
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     function isRevokedOrExpiredTokenError(error) {
