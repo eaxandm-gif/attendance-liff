@@ -180,6 +180,143 @@
       box-shadow: none;
       font-size: 14px;
     }
+
+
+    .section-card {
+      margin-top: 16px;
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 18px;
+      color: #0f172a;
+    }
+
+    .timeline-list,
+    .history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .timeline-item,
+    .history-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 12px;
+      background: #f8fafc;
+    }
+
+    .timeline-row,
+    .history-head,
+    .history-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .timeline-label,
+    .history-date {
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .timeline-time {
+      font-weight: 700;
+      color: #0f766e;
+      white-space: nowrap;
+    }
+
+    .history-status {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+      white-space: nowrap;
+    }
+
+    .history-times {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 10px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .history-hours {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #cbd5e1;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-box {
+      border-radius: 14px;
+      padding: 12px;
+      background: #f1f5f9;
+      min-height: 78px;
+    }
+
+    .summary-value {
+      font-size: 21px;
+      font-weight: 800;
+      color: #0f766e;
+      line-height: 1.2;
+    }
+
+    .summary-label {
+      margin-top: 5px;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.35;
+    }
+
+    .month-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .month-toolbar button {
+      min-height: 40px;
+      width: 42px;
+      padding: 8px;
+      background: #e2e8f0;
+      color: #334155;
+      box-shadow: none;
+      font-size: 18px;
+    }
+
+    .month-label {
+      flex: 1;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 18px 10px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
   </style>
 </head>
 
@@ -208,6 +345,27 @@
         สาขา, ตารางงาน และสถานะการลา
       </div>
     </div>
+
+
+    <section id="todaySection" class="section-card hidden">
+      <h2 class="section-title">เวลาลงงานวันนี้</h2>
+      <div id="todayTimeline" class="timeline-list"></div>
+    </section>
+
+    <section id="monthlySection" class="section-card hidden">
+      <div class="month-toolbar">
+        <button type="button" aria-label="เดือนก่อนหน้า" onclick="changeHistoryMonth(-1)">‹</button>
+        <div id="monthLabel" class="month-label">เดือนนี้</div>
+        <button id="nextMonthButton" type="button" aria-label="เดือนถัดไป" onclick="changeHistoryMonth(1)">›</button>
+      </div>
+
+      <h2 class="section-title">สรุปประจำเดือน</h2>
+      <div id="monthlySummary" class="summary-grid"></div>
+
+      <h2 class="section-title" style="margin-top:18px;">ประวัติการลงเวลา</h2>
+      <div id="monthlyHistory" class="history-list"></div>
+    </section>
+
   </main>
 
   <script>
@@ -241,6 +399,8 @@
     let isSubmitting = false;
     let currentEmployee = null;
     let currentPageState = null;
+    let selectedHistoryMonth = getCurrentMonthKey();
+    let monthlyHistoryCache = {};
 
     const TOKEN_RECOVERY_KEY = 'attendance_liff_token_recovery';
     const TOKEN_RECOVERY_WINDOW_MS = 2 * 60 * 1000;
@@ -413,6 +573,8 @@
       currentPageState = result;
       currentEmployee = result.employee;
       renderPageState(result);
+      renderTodayTimeline(result.events || []);
+      await loadMonthlyHistory(selectedHistoryMonth, false);
 
       if (showLoading) {
         showStatus('อัปเดตสถานะล่าสุดแล้ว', 'success');
@@ -853,6 +1015,177 @@
       if (type === 'warning') box.classList.add('warning');
       box.textContent = message;
     }
+
+
+    function getCurrentMonthKey() {
+      const now = new Date();
+      return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    }
+
+    function formatThaiMonth(monthKey) {
+      const parts = String(monthKey || '').split('-');
+      if (parts.length !== 2) return monthKey;
+      const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+      const year = Number(parts[0]) + 543;
+      const monthIndex = Number(parts[1]) - 1;
+      return (months[monthIndex] || parts[1]) + ' ' + year;
+    }
+
+    function formatThaiDate(dateKey) {
+      const parts = String(dateKey || '').split('-');
+      if (parts.length !== 3) return safeValue(dateKey);
+      return Number(parts[2]) + '/' + Number(parts[1]) + '/' + (Number(parts[0]) + 543);
+    }
+
+    function eventLabelThai(type) {
+      const map = {
+        IN: 'เข้างาน',
+        BREAK_OUT: 'ออกพัก',
+        BREAK_IN: 'กลับจากพัก',
+        OUT: 'ออกงาน',
+        DAY_IN: 'เริ่มงานวันนี้',
+        BRANCH_IN: 'เข้าสาขา',
+        BRANCH_OUT: 'ออกจากสาขา',
+        DAY_OUT: 'เลิกงานวันนี้',
+        WORK_IN: 'เข้างาน',
+        WORK_OUT: 'ออกงาน',
+        REFILL_IN: 'เข้าเติมของ',
+        REFILL_OUT: 'ออกจากเติมของ'
+      };
+      return map[type] || actionLabel(type) || type;
+    }
+
+    function renderTodayTimeline(events) {
+      const section = document.getElementById('todaySection');
+      const container = document.getElementById('todayTimeline');
+      section.classList.remove('hidden');
+      container.innerHTML = '';
+
+      if (!events || !events.length) {
+        container.innerHTML = '<div class="empty-state">วันนี้ยังไม่มีรายการลงเวลา</div>';
+        return;
+      }
+
+      events.forEach(function (event) {
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+        const office = event.office || event.actualOffice || '';
+        item.innerHTML =
+          '<div class="timeline-row">' +
+            '<div class="timeline-label">' + escapeHtml(eventLabelThai(event.type)) + '</div>' +
+            '<div class="timeline-time">' + escapeHtml(safeValue(event.time)) + '</div>' +
+          '</div>' +
+          (office ? '<div class="small" style="margin-top:6px;">' + escapeHtml(office) + '</div>' : '');
+        container.appendChild(item);
+      });
+    }
+
+    async function loadMonthlyHistory(monthKey, forceReload) {
+      if (!lineUserId) return;
+      selectedHistoryMonth = monthKey || getCurrentMonthKey();
+      document.getElementById('monthLabel').textContent = formatThaiMonth(selectedHistoryMonth);
+      document.getElementById('nextMonthButton').disabled = selectedHistoryMonth >= getCurrentMonthKey();
+      document.getElementById('monthlySection').classList.remove('hidden');
+
+      if (!forceReload && monthlyHistoryCache[selectedHistoryMonth]) {
+        renderMonthlyHistory(monthlyHistoryCache[selectedHistoryMonth]);
+        return;
+      }
+
+      document.getElementById('monthlyHistory').innerHTML = '<div class="empty-state">กำลังโหลดข้อมูล...</div>';
+      document.getElementById('monthlySummary').innerHTML = '';
+
+      try {
+        const result = await jsonpRequest(GAS_WEB_APP_URL, {
+          action: 'getEmployeeMonthlyHistory',
+          lineUserId: lineUserId,
+          month: selectedHistoryMonth
+        });
+        if (!result || result.success !== true) {
+          throw new Error(getServerMessage(result));
+        }
+        monthlyHistoryCache[selectedHistoryMonth] = result;
+        renderMonthlyHistory(result);
+      } catch (error) {
+        document.getElementById('monthlyHistory').innerHTML =
+          '<div class="empty-state">โหลดประวัติไม่สำเร็จ<br>' + escapeHtml(getErrorMessage(error)) + '</div>';
+      }
+    }
+
+    function changeHistoryMonth(offset) {
+      const parts = selectedHistoryMonth.split('-');
+      const date = new Date(Number(parts[0]), Number(parts[1]) - 1 + offset, 1);
+      const newKey = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+      if (newKey > getCurrentMonthKey()) return;
+      loadMonthlyHistory(newKey, false);
+    }
+
+    function renderMonthlyHistory(result) {
+      const summary = result.summary || {};
+      const summaryItems = [
+        ['วันที่มาทำงาน', summary.presentDays || 0, 'วัน'],
+        ['วันที่หยุด', summary.offDays || 0, 'วัน'],
+        ['วันที่ลา', summary.leaveDays || 0, 'วัน'],
+        ['วันที่ขาดงาน', summary.absentDays || 0, 'วัน'],
+        ['ชั่วโมงขาด', summary.shortHoursDisplay || '0 นาที', ''],
+        ['ชั่วโมงเกิน', summary.overHoursDisplay || '0 นาที', ''],
+        ['ชั่วโมงทำงานรวม', summary.workHoursDisplay || '0 นาที', ''],
+        ['วันยังไม่ออกงาน', summary.noCheckoutDays || 0, 'วัน']
+      ];
+
+      const summaryContainer = document.getElementById('monthlySummary');
+      summaryContainer.innerHTML = '';
+      summaryItems.forEach(function (item) {
+        const box = document.createElement('div');
+        box.className = 'summary-box';
+        box.innerHTML =
+          '<div class="summary-value">' + escapeHtml(String(item[1])) + (item[2] ? ' ' + escapeHtml(item[2]) : '') + '</div>' +
+          '<div class="summary-label">' + escapeHtml(item[0]) + '</div>';
+        summaryContainer.appendChild(box);
+      });
+
+      const history = result.days || [];
+      const historyContainer = document.getElementById('monthlyHistory');
+      historyContainer.innerHTML = '';
+
+      if (!history.length) {
+        historyContainer.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลในเดือนนี้</div>';
+        return;
+      }
+
+      history.forEach(function (day) {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML =
+          '<div class="history-head">' +
+            '<div class="history-date">' + escapeHtml(formatThaiDate(day.date)) + '</div>' +
+            '<div class="history-status">' + escapeHtml(day.statusThai || day.workStatus || '-') + '</div>' +
+          '</div>' +
+          '<div class="history-times">' +
+            '<div>เข้างาน: <strong>' + escapeHtml(day.inTime || '-') + '</strong></div>' +
+            '<div>ออกงาน: <strong>' + escapeHtml(day.outTime || '-') + '</strong></div>' +
+            '<div>ออกพัก: <strong>' + escapeHtml(day.breakOutTime || '-') + '</strong></div>' +
+            '<div>กลับจากพัก: <strong>' + escapeHtml(day.breakInTime || '-') + '</strong></div>' +
+          '</div>' +
+          '<div class="history-hours">' +
+            'เวลาทำงาน: <strong>' + escapeHtml(day.workHoursDisplay || '0 นาที') + '</strong><br>' +
+            'ขาด: <strong>' + escapeHtml(day.shortHoursDisplay || '0 นาที') + '</strong> · ' +
+            'เกิน: <strong>' + escapeHtml(day.overHoursDisplay || '0 นาที') + '</strong>' +
+            (day.note ? '<br><span class="small">' + escapeHtml(day.note) + '</span>' : '') +
+          '</div>';
+        historyContainer.appendChild(item);
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
   </script>
 </body>
 </html>
