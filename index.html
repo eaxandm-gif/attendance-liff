@@ -1261,6 +1261,7 @@
         ['วันที่ขาดงาน', summary.absentDays || 0, 'วัน'],
         ['ชั่วโมงขาด', summary.shortHoursDisplay || '0 นาที', ''],
         ['ชั่วโมงเกิน', summary.overHoursDisplay || '0 นาที', ''],
+        ['ชั่วโมงชดเชย', summary.makeUpHoursDisplay || '0 นาที', ''],
         ['ชั่วโมงทำงานรวม', summary.workHoursDisplay || '0 นาที', ''],
         ['วันยังไม่ออกงาน', summary.noCheckoutDays || 0, 'วัน']
       ];
@@ -1301,8 +1302,10 @@
           '</div>' +
           '<div class="history-hours">' +
             'เวลาทำงาน: <strong>' + escapeHtml(day.workHoursDisplay || '0 นาที') + '</strong><br>' +
-            'ขาด: <strong>' + escapeHtml(day.shortHoursDisplay || '0 นาที') + '</strong> · ' +
-            'เกิน: <strong>' + escapeHtml(day.overHoursDisplay || '0 นาที') + '</strong>' +
+            (day.makeUpHoursDisplay && day.makeUpHoursDisplay !== '0 นาที'
+              ? 'ชั่วโมงชดเชย: <strong>' + escapeHtml(day.makeUpHoursDisplay) + '</strong>'
+              : 'ขาด: <strong>' + escapeHtml(day.shortHoursDisplay || '0 นาที') + '</strong> · ' +
+                'เกิน: <strong>' + escapeHtml(day.overHoursDisplay || '0 นาที') + '</strong>') +
             (day.note ? '<br><span class="small">' + escapeHtml(day.note) + '</span>' : '') +
           '</div>';
         historyContainer.appendChild(item);
