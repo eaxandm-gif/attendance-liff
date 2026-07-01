@@ -379,7 +379,7 @@
 <body>
   <div id="modeSwitch" class="mode-switch">
     <button id="employeeModeBtn" class="active" onclick="switchAppMode('employee')">พนักงาน</button>
-    <button id="adminModeBtn" onclick="switchAppMode('admin')">แอดมิน</button>
+    <button id="adminModeBtn" class="hidden" onclick="switchAppMode('admin')">แอดมิน</button>
   </div>
 
   <div id="employeeApp">
@@ -1373,11 +1373,43 @@
     }
 
     let isAdminUser=false, adminEmployees=[], adminDailyData=null, adminPersonData=null, adminMonthlyData=null, adminEditingEvent=null, adminScheduleData=null, adminScheduleSelectedDay=null;
-    async function initializeAdminMode(){
-      try{const r=await jsonpRequest(GAS_WEB_APP_URL,{action:'adminBootstrap',lineUserId:lineUserId});if(r&&r.success){isAdminUser=true;document.getElementById('modeSwitch').classList.add('show');await loadAdminEmployees();const t=r.today||new Date().toISOString().slice(0,10);['adminDailyDate','adminEditDate'].forEach(id=>document.getElementById(id).value=t);['adminPersonMonth','adminMonth','adminScheduleMonth'].forEach(id=>document.getElementById(id).value=t.slice(0,7));}}
-      catch(e){isAdminUser=false;}
+    function setAdminModeVisibility(allowed){
+      const switchBox=document.getElementById('modeSwitch');
+      const adminBtn=document.getElementById('adminModeBtn');
+      isAdminUser=Boolean(allowed);
+      if(isAdminUser){
+        if(adminBtn) adminBtn.classList.remove('hidden');
+        if(switchBox) switchBox.classList.add('show');
+      }else{
+        if(adminBtn) adminBtn.classList.add('hidden');
+        if(switchBox) switchBox.classList.remove('show');
+        document.getElementById('employeeApp').classList.remove('hidden');
+        document.getElementById('adminApp').classList.add('hidden');
+      }
     }
-    function switchAppMode(mode){if(mode==='admin'&&!isAdminUser)return;document.getElementById('employeeApp').classList.toggle('hidden',mode!=='employee');document.getElementById('adminApp').classList.toggle('hidden',mode!=='admin');document.getElementById('employeeModeBtn').classList.toggle('active',mode==='employee');document.getElementById('adminModeBtn').classList.toggle('active',mode==='admin');if(mode==='admin')loadAdminDaily();}
+    async function initializeAdminMode(){
+      setAdminModeVisibility(false);
+      try{
+        const r=await jsonpRequest(GAS_WEB_APP_URL,{action:'adminBootstrap',lineUserId:lineUserId});
+        if(r&&r.success&&r.isAdmin===true){
+          setAdminModeVisibility(true);
+          await loadAdminEmployees();
+          const t=r.today||new Date().toISOString().slice(0,10);
+          ['adminDailyDate','adminEditDate'].forEach(id=>document.getElementById(id).value=t);
+          ['adminPersonMonth','adminMonth','adminScheduleMonth'].forEach(id=>document.getElementById(id).value=t.slice(0,7));
+          return;
+        }
+      }catch(e){}
+      setAdminModeVisibility(false);
+    }
+    function switchAppMode(mode){
+      if(mode==='admin'&&!isAdminUser)return;
+      document.getElementById('employeeApp').classList.toggle('hidden',mode!=='employee');
+      document.getElementById('adminApp').classList.toggle('hidden',mode!=='admin');
+      document.getElementById('employeeModeBtn').classList.toggle('active',mode==='employee');
+      document.getElementById('adminModeBtn').classList.toggle('active',mode==='admin');
+      if(mode==='admin')loadAdminDaily();
+    }
     function showAdminTab(name,btn){document.querySelectorAll('.admin-tab').forEach(x=>x.classList.add('hidden'));document.getElementById('admin'+name.charAt(0).toUpperCase()+name.slice(1)+'Tab').classList.remove('hidden');document.querySelectorAll('#adminTabs button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');}
     async function adminCall(action,params){const r=await jsonpRequest(GAS_WEB_APP_URL,Object.assign({action:action,lineUserId:lineUserId},params||{}));if(!r||r.success===false)throw new Error((r&&r.message)||'เกิดข้อผิดพลาด');return r;}
     async function loadAdminEmployees(){const r=await adminCall('adminEmployees');adminEmployees=(r.rows||[]).filter(x=>x.active!==false);const opts=adminEmployees.map(x=>'<option value="'+escapeHtml(x.employeeId||x.lineUserId)+'">'+escapeHtml((x.employeeId||'')+' - '+(x.name||''))+'</option>').join('');document.getElementById('adminPersonEmployee').innerHTML=opts;document.getElementById('adminEditEmployee').innerHTML=opts;document.getElementById('adminScheduleEmployee').innerHTML=opts;}
