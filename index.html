@@ -554,8 +554,9 @@
         document.getElementById('lineBox').textContent =
           'LINE: ' + lineDisplayName;
 
+        preEnableBuiltInAdmin();
+        initializeAdminMode();
         await refreshPageState(false);
-        await initializeAdminMode();
         showStatus('พร้อมใช้งาน กรุณากดปุ่มตามสถานะที่แสดง', 'success');
 
       } catch (err) {
@@ -1372,7 +1373,8 @@
         .replace(/'/g, '&#039;');
     }
 
-    let isAdminUser=false, adminEmployees=[], adminDailyData=null, adminPersonData=null, adminMonthlyData=null, adminEditingEvent=null, adminScheduleData=null, adminScheduleSelectedDay=null;
+    const BUILT_IN_ADMIN_LINE_IDS=['U0d6d8d6f2f643cd09f4ec55c43c5b9bd'];
+    let isAdminUser=false, adminEmployees=[], adminEmployeesLoaded=false, adminDailyData=null, adminPersonData=null, adminMonthlyData=null, adminEditingEvent=null, adminScheduleData=null, adminScheduleSelectedDay=null;
     function setAdminModeVisibility(allowed){
       const switchBox=document.getElementById('modeSwitch');
       const adminBtn=document.getElementById('adminModeBtn');
@@ -1387,28 +1389,42 @@
         document.getElementById('adminApp').classList.add('hidden');
       }
     }
+    function preEnableBuiltInAdmin(){
+      const allowed=BUILT_IN_ADMIN_LINE_IDS.includes(String(lineUserId||'').trim());
+      if(allowed) setAdminModeVisibility(true);
+      return allowed;
+    }
     async function initializeAdminMode(){
-      setAdminModeVisibility(false);
+      const preAllowed=preEnableBuiltInAdmin();
       try{
         const r=await jsonpRequest(GAS_WEB_APP_URL,{action:'adminBootstrap',lineUserId:lineUserId});
-        if(r&&r.success&&r.isAdmin===true){
-          setAdminModeVisibility(true);
-          await loadAdminEmployees();
+        const allowed=Boolean(r&&r.success&&r.isAdmin===true);
+        setAdminModeVisibility(allowed);
+        if(allowed){
           const t=r.today||new Date().toISOString().slice(0,10);
           ['adminDailyDate','adminEditDate'].forEach(id=>document.getElementById(id).value=t);
           ['adminPersonMonth','adminMonth','adminScheduleMonth'].forEach(id=>document.getElementById(id).value=t.slice(0,7));
-          return;
         }
-      }catch(e){}
-      setAdminModeVisibility(false);
+      }catch(e){
+        if(!preAllowed) setAdminModeVisibility(false);
+      }
     }
-    function switchAppMode(mode){
+    async function switchAppMode(mode){
       if(mode==='admin'&&!isAdminUser)return;
       document.getElementById('employeeApp').classList.toggle('hidden',mode!=='employee');
       document.getElementById('adminApp').classList.toggle('hidden',mode!=='admin');
       document.getElementById('employeeModeBtn').classList.toggle('active',mode==='employee');
       document.getElementById('adminModeBtn').classList.toggle('active',mode==='admin');
-      if(mode==='admin')loadAdminDaily();
+      if(mode==='admin'){
+        try{
+          if(!adminEmployeesLoaded){
+            showStatus('กำลังโหลดข้อมูลแอดมิน...','');
+            await loadAdminEmployees();
+            adminEmployeesLoaded=true;
+          }
+          await loadAdminDaily();
+        }catch(e){showStatus(e.message||String(e),'error');}
+      }
     }
     function showAdminTab(name,btn){document.querySelectorAll('.admin-tab').forEach(x=>x.classList.add('hidden'));document.getElementById('admin'+name.charAt(0).toUpperCase()+name.slice(1)+'Tab').classList.remove('hidden');document.querySelectorAll('#adminTabs button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');}
     async function adminCall(action,params){const r=await jsonpRequest(GAS_WEB_APP_URL,Object.assign({action:action,lineUserId:lineUserId},params||{}));if(!r||r.success===false)throw new Error((r&&r.message)||'เกิดข้อผิดพลาด');return r;}
