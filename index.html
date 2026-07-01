@@ -1374,7 +1374,7 @@
     }
 
     const BUILT_IN_ADMIN_LINE_IDS=['U0d6d8d6f2f643cd09f4ec55c43c5b9bd'];
-    let isAdminUser=false, adminEmployees=[], adminEmployeesLoaded=false, adminDailyData=null, adminPersonData=null, adminMonthlyData=null, adminEditingEvent=null, adminScheduleData=null, adminScheduleSelectedDay=null;
+    let isAdminUser=false, adminEmployees=[], adminEmployeesLoaded=false, adminEmployeesLoading=null, adminDailyLoaded=false, adminDailyLoading=null, adminDailyData=null, adminPersonData=null, adminMonthlyData=null, adminEditingEvent=null, adminScheduleData=null, adminScheduleSelectedDay=null;
     function setAdminModeVisibility(allowed){
       const switchBox=document.getElementById('modeSwitch');
       const adminBtn=document.getElementById('adminModeBtn');
@@ -1409,28 +1409,59 @@
         if(!preAllowed) setAdminModeVisibility(false);
       }
     }
-    async function switchAppMode(mode){
+    function switchAppMode(mode){
       if(mode==='admin'&&!isAdminUser)return;
       document.getElementById('employeeApp').classList.toggle('hidden',mode!=='employee');
       document.getElementById('adminApp').classList.toggle('hidden',mode!=='admin');
       document.getElementById('employeeModeBtn').classList.toggle('active',mode==='employee');
       document.getElementById('adminModeBtn').classList.toggle('active',mode==='admin');
       if(mode==='admin'){
-        try{
-          if(!adminEmployeesLoaded){
-            showStatus('กำลังโหลดข้อมูลแอดมิน...','');
-            await loadAdminEmployees();
-            adminEmployeesLoaded=true;
-          }
-          await loadAdminDaily();
-        }catch(e){showStatus(e.message||String(e),'error');}
+        // เปิดหน้าแอดมินทันที แล้วค่อยโหลดข้อมูลหนักหลัง browser วาดหน้าจอแล้ว
+        restoreAdminEmployeesCache_();
+        requestAnimationFrame(function(){
+          setTimeout(function(){
+            loadAdminEmployees().catch(function(e){showStatus(e.message||String(e),'error');});
+            if(!adminDailyLoaded&&!adminDailyLoading){
+              adminDailyLoading=loadAdminDaily().finally(function(){adminDailyLoading=null;});
+            }
+          },0);
+        });
       }
     }
     function showAdminTab(name,btn){document.querySelectorAll('.admin-tab').forEach(x=>x.classList.add('hidden'));document.getElementById('admin'+name.charAt(0).toUpperCase()+name.slice(1)+'Tab').classList.remove('hidden');document.querySelectorAll('#adminTabs button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');if(name==='daily')loadAdminDaily();if(name==='schedule'&&document.getElementById('adminScheduleEmployee').value)loadAdminScheduleCalendar();}
     async function adminCall(action,params){const r=await jsonpRequest(GAS_WEB_APP_URL,Object.assign({action:action,lineUserId:lineUserId,_ts:Date.now()},params||{}));if(!r||r.success===false)throw new Error((r&&r.message)||'เกิดข้อผิดพลาด');return r;}
-    async function loadAdminEmployees(){try{const r=await adminCall('adminEmployees');adminEmployees=(r.rows||[]).filter(x=>x.active!==false&&x.name);const opts=adminEmployees.map(x=>'<option value="'+escapeHtml(x.employeeId||x.lineUserId)+'">'+escapeHtml((x.employeeId||'')+' - '+(x.name||''))+'</option>').join('');const html=opts||'<option value="">ไม่พบพนักงานที่เปิดใช้งาน</option>';document.getElementById('adminPersonEmployee').innerHTML=html;document.getElementById('adminEditEmployee').innerHTML=html;document.getElementById('adminScheduleEmployee').innerHTML=html;if(!adminEmployees.length)throw new Error('ไม่พบพนักงานที่เปิดใช้งาน กรุณาตรวจชีท Employees และคอลัมน์ Active');}catch(e){showStatus(e.message||String(e),'error');throw e;}}
+    function renderAdminEmployees_(rows){
+      adminEmployees=(rows||[]).filter(x=>x.active!==false&&x.name);
+      const opts=adminEmployees.map(x=>'<option value="'+escapeHtml(x.employeeId||x.lineUserId)+'">'+escapeHtml((x.employeeId||'')+' - '+(x.name||''))+'</option>').join('');
+      const html=opts||'<option value="">ไม่พบพนักงานที่เปิดใช้งาน</option>';
+      ['adminPersonEmployee','adminEditEmployee','adminScheduleEmployee'].forEach(function(id){document.getElementById(id).innerHTML=html;});
+      adminEmployeesLoaded=adminEmployees.length>0;
+    }
+    function restoreAdminEmployeesCache_(){
+      if(adminEmployeesLoaded)return true;
+      try{
+        const raw=localStorage.getItem('attendanceAdminEmployeesV1');
+        if(!raw)return false;
+        const cached=JSON.parse(raw);
+        if(!cached||!Array.isArray(cached.rows)||Date.now()-Number(cached.savedAt||0)>1800000)return false;
+        renderAdminEmployees_(cached.rows);
+        return adminEmployeesLoaded;
+      }catch(_){return false;}
+    }
+    async function loadAdminEmployees(force){
+      if(adminEmployeesLoading)return adminEmployeesLoading;
+      if(!force&&adminEmployeesLoaded)return adminEmployees;
+      adminEmployeesLoading=(async function(){
+        const r=await adminCall('adminEmployees');
+        renderAdminEmployees_(r.rows||[]);
+        try{localStorage.setItem('attendanceAdminEmployeesV1',JSON.stringify({savedAt:Date.now(),rows:r.rows||[]}));}catch(_){}
+        if(!adminEmployees.length)throw new Error('ไม่พบพนักงานที่เปิดใช้งาน กรุณาตรวจชีท Employees และคอลัมน์ Active');
+        return adminEmployees;
+      })();
+      try{return await adminEmployeesLoading;}finally{adminEmployeesLoading=null;}
+    }
     function adminKpi(label,value){return '<div class="admin-kpi"><b>'+escapeHtml(String(value))+'</b><span>'+escapeHtml(label)+'</span></div>';}
-    async function loadAdminDaily(){try{showStatus('กำลังโหลดข้อมูลรายวัน...','');const r=await adminCall('adminDaily',{date:document.getElementById('adminDailyDate').value});adminDailyData=r;const s=r.summary||{};document.getElementById('adminDailyKpis').innerHTML=adminKpi('พนักงานทั้งหมด',s.total||0)+adminKpi('มาทำงาน',s.present||0)+adminKpi('ขาดงาน',s.absent||0)+adminKpi('ยังไม่ออกงาน',s.noCheckout||0);document.getElementById('adminDailyList').innerHTML=(r.rows||[]).map(x=>'<div class="admin-row"><div class="admin-row-head"><div><div class="admin-row-name">'+escapeHtml(x.name||'-')+'</div><div class="admin-meta">'+escapeHtml(x.employeeId||'')+' · '+escapeHtml(x.scheduleStatus||'-')+' · '+escapeHtml(x.office||'-')+'</div></div><span class="history-status">'+escapeHtml(x.attendanceStatus||'-')+'</span></div><div class="admin-hours">เข้า '+escapeHtml(x.inTime||'-')+' · ออก '+escapeHtml(x.outTime||'-')+'<br>ทำงาน '+escapeHtml(x.workHours||'0 นาที')+' · ขาด '+escapeHtml(x.shortHours||'0 นาที')+' · เกิน '+escapeHtml(x.overHours||'0 นาที')+' · ชดเชย '+escapeHtml(x.makeUpHours||'0 นาที')+'</div></div>').join('')||'<div class="admin-empty">ไม่มีข้อมูล</div>';showStatus('โหลดข้อมูลแล้ว','success');}catch(e){showStatus(e.message,'error');}}
+    async function loadAdminDaily(){try{showStatus('กำลังโหลดข้อมูลรายวัน...','');const r=await adminCall('adminDaily',{date:document.getElementById('adminDailyDate').value});adminDailyData=r;const s=r.summary||{};document.getElementById('adminDailyKpis').innerHTML=adminKpi('พนักงานทั้งหมด',s.total||0)+adminKpi('มาทำงาน',s.present||0)+adminKpi('ขาดงาน',s.absent||0)+adminKpi('ยังไม่ออกงาน',s.noCheckout||0);document.getElementById('adminDailyList').innerHTML=(r.rows||[]).map(x=>'<div class="admin-row"><div class="admin-row-head"><div><div class="admin-row-name">'+escapeHtml(x.name||'-')+'</div><div class="admin-meta">'+escapeHtml(x.employeeId||'')+' · '+escapeHtml(x.scheduleStatus||'-')+' · '+escapeHtml(x.office||'-')+'</div></div><span class="history-status">'+escapeHtml(x.attendanceStatus||'-')+'</span></div><div class="admin-hours">เข้า '+escapeHtml(x.inTime||'-')+' · ออก '+escapeHtml(x.outTime||'-')+'<br>ทำงาน '+escapeHtml(x.workHours||'0 นาที')+' · ขาด '+escapeHtml(x.shortHours||'0 นาที')+' · เกิน '+escapeHtml(x.overHours||'0 นาที')+' · ชดเชย '+escapeHtml(x.makeUpHours||'0 นาที')+'</div></div>').join('')||'<div class="admin-empty">ไม่มีข้อมูล</div>';adminDailyLoaded=true;showStatus('โหลดข้อมูลแล้ว','success');}catch(e){showStatus(e.message,'error');}}
     async function loadAdminPerson(){try{const r=await adminCall('adminEmployeeMonth',{employeeUserId:document.getElementById('adminPersonEmployee').value,month:document.getElementById('adminPersonMonth').value});adminPersonData=r;const s=r.summary||{};document.getElementById('adminPersonSummary').innerHTML=adminKpi('มาทำงาน',s.presentDays||0)+adminKpi('วันหยุด',s.offDays||0)+adminKpi('วันลา',s.leaveDays||0)+adminKpi('ขาดงาน',s.absentDays||0)+adminKpi('ชั่วโมงขาด',s.shortHoursDisplay||'0 นาที')+adminKpi('ชั่วโมงเกิน',s.overHoursDisplay||'0 นาที')+adminKpi('ชั่วโมงชดเชย',s.makeUpHoursDisplay||'0 นาที')+adminKpi('เวลาทำงานรวม',s.workHoursDisplay||'0 นาที');document.getElementById('adminPersonList').innerHTML=(r.days||[]).map(d=>'<div class="admin-row"><div class="admin-row-head"><div class="admin-row-name">'+escapeHtml(formatThaiDate(d.date))+'</div><span class="history-status">'+escapeHtml(d.statusThai||'-')+'</span></div><div class="admin-meta">เข้า '+escapeHtml(d.inTime||'-')+' · ออก '+escapeHtml(d.outTime||'-')+' · พัก '+escapeHtml(d.breakOutTime||'-')+' / '+escapeHtml(d.breakInTime||'-')+'</div><div class="admin-hours">ทำงาน '+escapeHtml(d.workHoursDisplay||'0 นาที')+' · ขาด '+escapeHtml(d.shortHoursDisplay||'0 นาที')+' · เกิน '+escapeHtml(d.overHoursDisplay||'0 นาที')+' · ชดเชย '+escapeHtml(d.makeUpHoursDisplay||'0 นาที')+'</div></div>').join('')||'<div class="admin-empty">ไม่มีข้อมูล</div>';}catch(e){showStatus(e.message,'error');}}
     async function loadAdminMonthly(){try{const r=await adminCall('adminMonthly',{month:document.getElementById('adminMonth').value});adminMonthlyData=r;const hs=r.headers||[];document.getElementById('adminMonthlyHead').innerHTML='<tr>'+hs.map(h=>'<th>'+escapeHtml(h)+'</th>').join('')+'</tr>';document.getElementById('adminMonthlyBody').innerHTML=(r.rows||[]).map(o=>'<tr>'+hs.map(h=>'<td>'+escapeHtml(o[h]||'')+'</td>').join('')+'</tr>').join('');}catch(e){showStatus(e.message,'error');}}
     async function loadAdminAttendance(){try{const r=await adminCall('adminAttendance',{employeeUserId:document.getElementById('adminEditEmployee').value,date:document.getElementById('adminEditDate').value});document.getElementById('adminAttendanceList').innerHTML=(r.events||[]).map(e=>'<div class="admin-row"><div class="admin-row-head"><div><div class="admin-row-name">'+escapeHtml(e.type)+' · '+escapeHtml(e.time)+'</div><div class="admin-meta">'+escapeHtml(e.officeName||e.officeId||'-')+'</div></div><div><button class="admin-btn secondary" onclick=\'openAdminAttendanceForm('+JSON.stringify(e)+')\'>แก้</button> <button class="admin-btn danger" onclick=\'deleteAdminAttendance('+JSON.stringify(e)+')\'>ลบ</button></div></div></div>').join('')||'<div class="admin-empty">ยังไม่มีรายการ</div>';}catch(e){showStatus(e.message,'error');}}
