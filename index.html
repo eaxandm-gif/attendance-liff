@@ -1,1566 +1,1522 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Attendance System</title>
-
+  <meta name="theme-color" content="#06c755">
+  <title>Kitty Attendance</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
   <style>
     :root {
-      --line: #06c755;
-      --teal: #0f766e;
-      --green: #16a34a;
-      --red: #dc2626;
-      --orange: #f97316;
-      --blue: #2563eb;
-      --purple: #7c3aed;
-      --slate: #475569;
-      --bg: #f8fafc;
-      --text: #111827;
-      --muted: #6b7280;
+      --green:#06c755; --green-dark:#047857; --bg:#f1f5f9; --card:#fff;
+      --ink:#0f172a; --muted:#64748b; --border:#dbe3ee; --danger:#dc2626;
+      --orange:#ea580c; --blue:#2563eb; --purple:#7c3aed;
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .hero {
-      padding: 28px 18px 46px;
-      background: linear-gradient(135deg, var(--line), var(--teal));
-      color: white;
-      text-align: center;
-    }
-
-    .hero h1 {
-      margin: 0;
-      font-size: 26px;
-    }
-
-    .hero p {
-      margin: 8px 0 0;
-      font-size: 14px;
-      opacity: 0.95;
-    }
-
-    .container {
-      max-width: 520px;
-      margin: -24px auto 40px;
-      padding: 0 16px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
-    }
-
-    .info {
-      padding: 12px;
-      background: #f3f4f6;
-      border-radius: 12px;
-      margin-bottom: 10px;
-      font-size: 14px;
-      word-break: break-word;
-      line-height: 1.5;
-    }
-
-    .state {
-      border-left: 4px solid var(--teal);
-      background: #ecfeff;
-    }
-
-    .action-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 18px;
-    }
-
-    button {
-      min-height: 58px;
-      border: none;
-      border-radius: 14px;
-      padding: 14px 10px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      color: white;
-      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
-    }
-
-    button:active {
-      transform: translateY(1px);
-    }
-
-    button:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .action-in,
-    .action-day-in {
-      background: var(--green);
-    }
-
-    .action-out,
-    .action-day-out {
-      background: var(--red);
-    }
-
-    .action-break-out {
-      background: var(--orange);
-    }
-
-    .action-break-in {
-      background: var(--blue);
-    }
-
-    .action-branch-in {
-      background: var(--purple);
-    }
-
-    .action-branch-out {
-      background: var(--slate);
-    }
-
-    .status {
-      margin-top: 18px;
-      padding: 14px;
-      border-radius: 12px;
-      background: #f3f4f6;
-      font-size: 14px;
-      white-space: pre-line;
-      line-height: 1.55;
-    }
-
-    .success {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .error {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .warning {
-      background: #fff7ed;
-      color: #9a3412;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .small {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 12px;
-      line-height: 1.45;
-    }
-
-    .refresh {
-      width: 100%;
-      min-height: 44px;
-      margin-top: 12px;
-      background: #e2e8f0;
-      color: #334155;
-      box-shadow: none;
-      font-size: 14px;
-    }
-
-
-    .section-card {
-      margin-top: 16px;
-      background: #ffffff;
-      border-radius: 18px;
-      padding: 16px;
-      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
-    }
-
-    .section-title {
-      margin: 0 0 12px;
-      font-size: 18px;
-      color: #0f172a;
-    }
-
-    .timeline-list,
-    .history-list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .timeline-item,
-    .history-item {
-      border: 1px solid #e2e8f0;
-      border-radius: 14px;
-      padding: 12px;
-      background: #f8fafc;
-    }
-
-    .timeline-row,
-    .history-head,
-    .history-meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: flex-start;
-    }
-
-    .timeline-label,
-    .history-date {
-      font-weight: 700;
-      color: #0f172a;
-    }
-
-    .timeline-time {
-      font-weight: 700;
-      color: #0f766e;
-      white-space: nowrap;
-    }
-
-    .history-status {
-      font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: #e2e8f0;
-      color: #334155;
-      white-space: nowrap;
-    }
-
-    .history-times {
-      margin-top: 8px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px 10px;
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .history-hours {
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px dashed #cbd5e1;
-      font-size: 13px;
-      line-height: 1.55;
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .summary-box {
-      border-radius: 14px;
-      padding: 12px;
-      background: #f1f5f9;
-      min-height: 78px;
-    }
-
-    .summary-value {
-      font-size: 21px;
-      font-weight: 800;
-      color: #0f766e;
-      line-height: 1.2;
-    }
-
-    .summary-label {
-      margin-top: 5px;
-      font-size: 12px;
-      color: #64748b;
-      line-height: 1.35;
-    }
-
-    .month-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .month-toolbar button {
-      min-height: 40px;
-      width: 42px;
-      padding: 8px;
-      background: #e2e8f0;
-      color: #334155;
-      box-shadow: none;
-      font-size: 18px;
-    }
-
-    .month-label {
-      flex: 1;
-      text-align: center;
-      font-size: 16px;
-      font-weight: 700;
-      color: #0f172a;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 18px 10px;
-      color: #64748b;
-      font-size: 14px;
-    }
-
-    .unregistered-card {
-      margin-top: 12px;
-      padding: 16px;
-      border: 1px solid #fecaca;
-      border-radius: 14px;
-      background: #fff7f7;
-      color: #7f1d1d;
-      line-height: 1.6;
-    }
-
-    .unregistered-title {
-      font-size: 17px;
-      font-weight: 800;
-      margin-bottom: 10px;
-    }
-
-    .identity-row {
-      margin-top: 8px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      background: #ffffff;
-      border: 1px solid #fecaca;
-      word-break: break-all;
-    }
-
-    .identity-label {
-      display: block;
-      margin-bottom: 3px;
-      font-size: 12px;
-      color: #991b1b;
-      font-weight: 700;
-    }
-
-    .identity-value {
-      font-size: 14px;
-      color: #111827;
-      font-weight: 700;
-    }
-
-    .copy-id-button {
-      width: 100%;
-      min-height: 46px;
-      margin-top: 12px;
-      background: #0f766e;
-      color: #ffffff;
-      box-shadow: none;
-      font-size: 14px;
-    }
-
-
-    .mode-switch{display:none;position:sticky;top:0;z-index:40;background:#fff;padding:10px 16px;border-bottom:1px solid #e5e7eb;gap:8px}
-    .mode-switch.show{display:flex}.mode-switch button{flex:1;border:0;border-radius:12px;padding:11px;font-size:15px;font-weight:800;background:#e5e7eb;color:#334155}.mode-switch button.active{background:#0f766e;color:#fff}
-    #employeeApp.hidden,#adminApp.hidden{display:none!important}.admin-shell{padding:14px;max-width:760px;margin:auto}.admin-title{font-size:24px;font-weight:900;margin:4px 0 12px}.admin-tabs{display:flex;overflow-x:auto;gap:8px;padding-bottom:8px}.admin-tabs button{white-space:nowrap;border:0;border-radius:999px;padding:9px 13px;background:#e5e7eb;font-weight:800}.admin-tabs button.active{background:#0f766e;color:#fff}.admin-card{background:#fff;border-radius:18px;padding:15px;margin:10px 0;box-shadow:0 8px 24px rgba(15,23,42,.07)}.admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.admin-kpi{background:#f0fdfa;border:1px solid #ccfbf1;border-radius:14px;padding:12px}.admin-kpi b{display:block;font-size:22px;color:#0f766e}.admin-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.admin-toolbar input,.admin-toolbar select,.admin-form input,.admin-form select,.admin-form textarea{min-height:44px;border:1px solid #cbd5e1;border-radius:10px;padding:9px 10px;font-size:16px;background:#fff}.admin-toolbar input,.admin-toolbar select{flex:1;min-width:135px}.admin-btn{border:0;border-radius:11px;padding:10px 13px;font-weight:800;background:#0f766e;color:#fff}.admin-btn.secondary{background:#e2e8f0;color:#334155}.admin-btn.danger{background:#fee2e2;color:#991b1b}.admin-list{display:grid;gap:9px}.admin-row{border:1px solid #e2e8f0;border-radius:14px;padding:12px;background:#f8fafc}.admin-row-head{display:flex;justify-content:space-between;gap:10px;align-items:start}.admin-row-name{font-weight:900;font-size:17px}.admin-meta{color:#64748b;font-size:13px;line-height:1.55;margin-top:5px}.admin-hours{margin-top:8px;font-size:14px}.admin-form{display:grid;gap:9px}.admin-form label{font-size:13px;font-weight:800;color:#475569}.admin-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100;align-items:flex-end}.admin-modal.show{display:flex}.admin-modal-box{background:#fff;width:100%;max-height:90vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px}.admin-empty{text-align:center;color:#64748b;padding:24px}.admin-table-wrap{overflow:auto}.admin-table{border-collapse:collapse;width:100%;font-size:12px}.admin-table th,.admin-table td{border-bottom:1px solid #e2e8f0;padding:8px;white-space:nowrap;text-align:left}.admin-table th{background:#f8fafc;position:sticky;top:0}.admin-note{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px;color:#92400e;font-size:13px}
-
-  
-    .schedule-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.schedule-weekday{text-align:center;font-size:12px;font-weight:900;color:#475569;padding:6px 0}.schedule-day{min-height:82px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;padding:7px 5px;text-align:left;position:relative}.schedule-day.empty{visibility:hidden}.schedule-day.has-attendance{box-shadow:inset 0 0 0 2px #38bdf8}.schedule-day-number{font-size:13px;font-weight:900}.schedule-day-status{font-size:11px;font-weight:800;margin-top:5px;line-height:1.25}.schedule-day-shift{font-size:10px;color:#64748b;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.schedule-day.WORK{background:#ecfdf5}.schedule-day.OFF{background:#f1f5f9}.schedule-day.SICK_LEAVE{background:#fef2f2}.schedule-day.BUSINESS_LEAVE{background:#fff7ed}.schedule-day.VACATION{background:#f5f3ff}.schedule-day.WFH{background:#eff6ff}.schedule-day.HOLIDAY{background:#fdf4ff}.schedule-day.UNPAID_LEAVE{background:#f8fafc}.schedule-legend{display:flex;flex-wrap:wrap;gap:6px;font-size:11px;margin-top:10px}.schedule-legend span{padding:5px 8px;border-radius:999px;background:#f1f5f9}.schedule-warning{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:10px;padding:9px;font-size:13px}.schedule-modal-box{max-width:520px}.schedule-current{font-size:13px;color:#475569;background:#f8fafc;border-radius:10px;padding:10px}
-  
-    /* v6.0 Mobile Pro Admin UI */
-    .admin-tabs{position:sticky;top:0;background:#f8fafc;z-index:30;padding:10px 0 12px;margin:0 -14px 10px 0;scroll-snap-type:x mandatory}
-    .admin-tabs button{font-size:15px;min-height:46px;padding:10px 16px;scroll-snap-align:start}
-    .admin-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .admin-toolbar input,.admin-toolbar select,.admin-toolbar button{width:100%;min-width:0;box-sizing:border-box}
-    .admin-btn{min-height:48px;font-size:16px}.admin-btn:disabled{opacity:.55}
-    .admin-row{position:relative}.admin-row .admin-row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .admin-mini-btn{border:0;border-radius:999px;padding:9px 12px;font-weight:800;background:#e0f2fe;color:#075985}
-    .admin-mini-btn.green{background:#dcfce7;color:#166534}.admin-mini-btn.orange{background:#ffedd5;color:#9a3412}.admin-mini-btn.red{background:#fee2e2;color:#991b1b}
-    .admin-modal{z-index:9999}.admin-modal-box{padding:22px 18px 26px;border-radius:26px 26px 0 0;max-height:92vh}.admin-modal-box h3{font-size:24px;margin:0 0 16px}
-    .admin-form label{font-size:15px}.admin-form input,.admin-form select,.admin-form textarea{font-size:18px;min-height:52px;border-radius:14px}
-    .admin-form textarea{min-height:96px}.admin-form .admin-toolbar{grid-template-columns:1fr 1fr}
-    .schedule-calendar{grid-template-columns:repeat(7,minmax(38px,1fr));gap:7px}.schedule-day{min-height:86px;padding:7px 4px;border-radius:16px}.schedule-day-status{font-size:11px;line-height:1.15}.schedule-day-shift{font-size:11px;overflow:hidden;text-overflow:ellipsis}
-    .admin-empty{font-size:16px}.admin-table{font-size:13px}
-    @media(max-width:520px){.admin-shell{padding:12px}.admin-grid{grid-template-columns:1fr 1fr}.admin-toolbar{grid-template-columns:1fr}.admin-card{padding:14px;border-radius:20px}.admin-title{font-size:24px}.admin-row-name{font-size:20px}.admin-hours{font-size:16px;line-height:1.65}.admin-meta{font-size:15px}.history-status{font-size:14px}.admin-form .admin-toolbar{grid-template-columns:1fr 1fr}.schedule-weekday{font-size:14px}.schedule-day{min-height:78px}.schedule-day-number{font-size:16px}}
-
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input,select,textarea{font:inherit}.hidden{display:none!important}
+    header{padding:calc(18px + env(safe-area-inset-top)) 16px 42px;
+      background:linear-gradient(135deg,var(--green),var(--green-dark));color:#fff}
+    header .wrap,main{max-width:720px;margin:auto}.toprow{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    h1{margin:0;font-size:25px}.switcher{display:flex;gap:8px}.switcher button{
+      border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.18);color:#fff;
+      padding:8px 12px;border-radius:999px;font-weight:800}
+    .switcher button.active{background:#fff;color:var(--green-dark)}
+    main{margin-top:-26px;padding:0 13px calc(25px + env(safe-area-inset-bottom))}
+    .card{background:var(--card);border-radius:20px;padding:17px;margin-bottom:13px;
+      box-shadow:0 10px 26px rgba(15,23,42,.09)}
+    .status{border:1px solid var(--border);background:#f8fafc;border-radius:13px;padding:12px 13px;font-size:14px}
+    .status.ok{background:#f0fdf4;border-color:#bbf7d0;color:#166534}.status.err{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+    .profile{display:grid;grid-template-columns:52px 1fr auto;gap:11px;align-items:center}
+    .avatar{width:52px;height:52px;border-radius:50%;object-fit:cover;background:#e2e8f0}
+    .name{font-size:18px;font-weight:900}.sub{font-size:13px;color:var(--muted);margin-top:3px}
+    .badge{background:var(--blue);color:#fff;font-size:11px;font-weight:900;border-radius:999px;padding:6px 9px}
+    .section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+    .section-head h2{font-size:18px;margin:0}.section-head small{color:var(--muted)}
+    .schedule{background:#ecfdf5;color:#065f46;border-radius:13px;padding:12px;line-height:1.55;font-size:14px;margin-bottom:12px}
+    .primary-action{width:100%;min-height:62px;border:0;border-radius:16px;color:#fff;font-size:20px;font-weight:900}
+    .primary-action:disabled{opacity:.38}.btn-in{background:#16a34a}.btn-breakout{background:var(--orange)}
+    .btn-breakin{background:var(--blue)}.btn-out{background:var(--danger)}
+    .btn-day{background:#0891b2}.btn-branch{background:var(--purple)}
+    .secondary{width:100%;border:1px solid var(--border);background:#fff;border-radius:12px;padding:11px;font-weight:800;margin-top:10px}
+    .timeline{display:grid;gap:8px}.event{border:1px solid var(--border);border-radius:12px;padding:11px;display:flex;justify-content:space-between;gap:10px}
+    .muted{color:var(--muted)}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .metric{border:1px solid var(--border);background:#f8fafc;border-radius:12px;padding:11px}
+    .metric b{display:block;font-size:17px;margin-top:4px}.field{display:grid;gap:5px;margin-bottom:10px}
+    .field label{font-size:12px;color:var(--muted);font-weight:800}
+    .field input,.field select,.field textarea{width:100%;border:1px solid var(--border);border-radius:11px;padding:10px;background:#fff}
+    .admin-tabs{display:flex;gap:7px;overflow:auto;padding-bottom:4px;margin-bottom:12px}.admin-tabs button{
+      white-space:nowrap;border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 11px;font-weight:800}
+    .admin-tabs button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+    .table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{padding:8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .danger{background:var(--danger)!important;color:#fff!important}.save{background:var(--green-dark)!important;color:#fff!important}
+    .row-actions{display:flex;gap:6px;flex-wrap:wrap}.row-actions button{border:0;border-radius:8px;padding:7px 9px;font-weight:800}
+    pre{white-space:pre-wrap;word-break:break-word;background:#0f172a;color:#e2e8f0;border-radius:13px;padding:12px;font-size:12px}
   </style>
+<script>
+window.addEventListener('error',function(e){
+  var box=document.getElementById('appStatus');
+  if(box){
+    box.className='status err';
+    box.textContent=(e&&e.message)||'เกิดข้อผิดพลาดในการโหลดหน้า';
+  }
+});
+window.addEventListener('unhandledrejection',function(e){
+  var box=document.getElementById('appStatus');
+  if(box){
+    box.className='status err';
+    box.textContent=(e&&e.reason&&e.reason.message)||String((e&&e.reason)||'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+  }
+});
+</script>
+
 </head>
-
 <body>
-  <div id="modeSwitch" class="mode-switch">
-    <button id="employeeModeBtn" class="active" onclick="switchAppMode('employee')">พนักงาน</button>
-    <button id="adminModeBtn" class="hidden" onclick="switchAppMode('admin')">แอดมิน</button>
+<header>
+  <div class="wrap">
+    <div class="toprow">
+      <h1>Kitty Attendance</h1>
+      <div id="modeSwitcher" class="switcher hidden">
+        <button id="employeeModeBtn" class="active" onclick="setMode('employee')">พนักงาน</button>
+        <button id="adminModeBtn" onclick="setMode('admin')">แอดมิน</button>
+      </div>
+    </div>
   </div>
+</header>
 
-  <div id="employeeApp">
-  <section class="hero">
-    <h1>ลงเวลาเข้า-ออกงาน</h1>
-    <p>Attendance System</p>
+<main>
+  <section class="card"><div id="appStatus" class="status">กำลังเปิดระบบ…</div></section>
+
+  
+  <section id="registrationCard" class="card hidden">
+    <div class="section-head"><h2>ลงทะเบียนพนักงานใหม่</h2></div>
+    <div class="status" style="margin-bottom:12px">
+      LINE User ID จะถูกดึงจากบัญชี LINE อัตโนมัติ<br>
+      กรอกเฉพาะชื่อ แล้วส่งให้แอดมินอนุมัติ
+    </div>
+
+    <div class="field">
+      <label>ชื่อพนักงาน *</label>
+      <input id="regName" placeholder="กรอกชื่อพนักงาน">
+    </div>
+
+    <div class="field">
+      <label>LINE User ID</label>
+      <input id="regLineUserId" readonly>
+    </div>
+
+    <button class="secondary save" onclick="submitEmployeeRegistration()">ส่งคำขออนุมัติ</button>
+    <div id="registrationResult" style="margin-top:12px"></div>
   </section>
 
-  <main class="container">
-    <div class="card">
-      <div id="lineBox" class="info">กำลังเชื่อมต่อ LINE...</div>
-      <div id="employeeBox" class="info">กำลังตรวจสอบพนักงาน...</div>
-      <div id="stateBox" class="info state hidden"></div>
+  <section id="profileCard" class="card hidden">
+    <div class="profile">
+      <img id="avatar" class="avatar" alt="">
+      <div><div id="employeeName" class="name">—</div><div id="employeeMeta" class="sub">—</div></div>
+      <span id="adminBadge" class="badge hidden">ADMIN</span>
+    </div>
+  </section>
 
-      <div id="actionButtons" class="action-grid hidden"></div>
+  <div id="employeeView">
+    <section id="clockCard" class="card hidden">
+      <div class="section-head"><h2>ลงเวลาวันนี้</h2><small id="todayLabel"></small></div>
+      <div id="scheduleBox" class="schedule">กำลังโหลด…</div>
+      <button id="nextActionBtn" class="primary-action btn-in" onclick="recordNextAction()">กำลังตรวจสอบ…</button>
+      <button id="resetClockButton" class="secondary hidden" style="margin-top:10px" onclick="forceUnlockClockButtons('manual')">รีเซ็ตปุ่มลงเวลา</button>
 
-      <button id="refreshButton" class="refresh hidden" type="button" onclick="refreshPageState(true)">
-        รีเฟรชสถานะ
+      <div id="driverActions" class="grid2 hidden" style="margin-top:10px">
+        <button id="driverWorkBtn"
+          class="primary-action btn-in"
+          style="margin-top:0"
+          onclick="recordDriverWorkAction()">
+          เข้างาน
+        </button>
+
+        <button id="driverBreakBtn"
+          class="primary-action btn-breakout"
+          style="margin-top:0"
+          onclick="recordDriverBreakAction()">
+          ออกพัก
+        </button>
+      </div>
+
+      <div id="baOptionalActions" class="grid2 hidden" style="margin-top:10px">
+        <button id="baBreakBtn" class="secondary" style="margin-top:0;background:#ea580c;color:white;border:0" onclick="recordSpecificAction('BREAK_OUT')">
+          เข้าพัก
+        </button>
+        <button id="baEndDayBtn" class="secondary" style="margin-top:0;background:#0891b2;color:white;border:0" onclick="recordSpecificAction('DAY_OUT')">
+          จบวันทำงาน
+        </button>
+      </div>
+      <button id="weekendWfhBtn" class="secondary hidden" style="background:#7c3aed;color:white;border:0" onclick="selfSetWeekendWfh()">
+        บันทึกวันนี้เป็น WFH
       </button>
-
-      <div id="status" class="status">กำลังเริ่มระบบ...</div>
-
-      <div class="small">
-        ระบบจะแสดงเฉพาะปุ่มที่กดได้ตามลำดับจริง และตรวจสอบ LINE User ID, GPS,
-        สาขา, ตารางงาน และสถานะการลา
-      </div>
-    </div>
-
-
-    <section id="todaySection" class="section-card hidden">
-      <h2 class="section-title">เวลาลงงานวันนี้</h2>
-      <div id="todayTimeline" class="timeline-list"></div>
+      <button class="secondary" onclick="loadToday()">รีเฟรชข้อมูล</button>
     </section>
 
-    <section id="monthlySection" class="section-card hidden">
-      <div class="month-toolbar">
-        <button type="button" aria-label="เดือนก่อนหน้า" onclick="changeHistoryMonth(-1)">‹</button>
-        <div id="monthLabel" class="month-label">เดือนนี้</div>
-        <button id="nextMonthButton" type="button" aria-label="เดือนถัดไป" onclick="changeHistoryMonth(1)">›</button>
-      </div>
-
-      <h2 class="section-title">สรุปประจำเดือน</h2>
-      <div id="monthlySummary" class="summary-grid"></div>
-
-      <h2 class="section-title" style="margin-top:18px;">ประวัติการลงเวลา</h2>
-      <div id="monthlyHistory" class="history-list"></div>
+    <section id="todayEventsCard" class="card hidden">
+      <div class="section-head"><h2>รายการวันนี้</h2><small id="eventCount">0 รายการ</small></div>
+      <div id="timeline" class="timeline"></div>
     </section>
 
-  </main>
+    <section id="historyCard" class="card hidden">
+      <div class="section-head">
+        <h2>ประวัติการลงเวลา</h2>
+        <input id="historyMonth" type="month" onchange="loadHistory()">
+      </div>
+      <div id="historyList" class="timeline"></div>
+    </section>
+
+    <section id="summaryCard" class="card hidden">
+      <div class="section-head"><h2>สรุปวันนี้</h2></div>
+      <div id="summaryGrid" class="grid2"></div>
+    </section>
   </div>
-  <section id="adminApp" class="admin-shell hidden">
-    <div class="admin-title">ระบบจัดการเวลาพนักงาน</div>
-    <div class="admin-tabs" id="adminTabs">
-      <button class="active" onclick="showAdminTab('daily',this)">รายวัน</button>
-      <button onclick="showAdminTab('person',this)">รายบุคคล</button>
-      <button onclick="showAdminTab('monthly',this)">สรุปเดือน</button>
-      <button onclick="showAdminTab('edit',this)">แก้เวลา</button>
-      <button onclick="showAdminTab('schedule',this);loadAdminScheduleCalendar()">ตารางงาน</button>
-    </div>
-    <div id="adminDailyTab" class="admin-tab">
-      <div class="admin-card"><div class="admin-toolbar"><input id="adminDailyDate" type="date"><button class="admin-btn" onclick="loadAdminDaily()">ดูข้อมูล</button><button class="admin-btn secondary" onclick="exportAdminDailyExcel()">Excel</button></div><div id="adminDailyKpis" class="admin-grid"></div></div>
-      <div class="admin-card"><div id="adminDailyList" class="admin-list"></div></div>
-    </div>
-    <div id="adminPersonTab" class="admin-tab hidden">
-      <div class="admin-card"><div class="admin-toolbar"><select id="adminPersonEmployee"></select><input id="adminPersonMonth" type="month"><button class="admin-btn" onclick="loadAdminPerson()">ดูข้อมูล</button><button class="admin-btn secondary" onclick="exportAdminPersonExcel()">Excel</button></div><div id="adminPersonSummary" class="admin-grid"></div></div>
-      <div class="admin-card"><div id="adminPersonList" class="admin-list"></div></div>
-    </div>
-    <div id="adminMonthlyTab" class="admin-tab hidden">
-      <div class="admin-card"><div class="admin-toolbar"><input id="adminMonth" type="month"><button class="admin-btn" onclick="loadAdminMonthly()">ดูสรุป</button><button class="admin-btn secondary" onclick="exportAdminMonthlyExcel()">Excel</button></div></div>
-      <div class="admin-card admin-table-wrap"><table class="admin-table"><thead id="adminMonthlyHead"></thead><tbody id="adminMonthlyBody"></tbody></table></div>
-    </div>
-    <div id="adminEditTab" class="admin-tab hidden">
-      <div class="admin-card"><div class="admin-note">ทุกการเพิ่ม แก้ไข หรือลบ ต้องระบุเหตุผล ระบบจะบันทึก Audit Log และคำนวณ Daily/Monthly ใหม่อัตโนมัติ</div><div class="admin-toolbar" style="margin-top:10px"><select id="adminEditEmployee"></select><input id="adminEditDate" type="date"><button class="admin-btn" onclick="loadAdminAttendance()">โหลด</button><button class="admin-btn secondary" onclick="openAdminAttendanceForm()">เพิ่มรายการ</button></div></div>
-      <div class="admin-card"><div id="adminAttendanceList" class="admin-list"></div></div>
-    </div>
-    <div id="adminScheduleTab" class="admin-tab hidden">
-      <div class="admin-card">
-        <div class="admin-note">เลือกพนักงานและเดือน แล้วแตะวันที่ในปฏิทินเพื่อเปลี่ยนกะ วันทำงาน วันหยุด หรือการลา ข้อมูลจะอัปเดต Employee_Schedule และคำนวณสรุปใหม่อัตโนมัติ</div>
-        <div class="admin-toolbar" style="margin-top:10px"><select id="adminScheduleEmployee"></select><input id="adminScheduleMonth" type="month"><button class="admin-btn" onclick="loadAdminScheduleCalendar()">แสดงปฏิทิน</button><button class="admin-btn secondary" onclick="repairAdminScheduleMonth()">ซ่อมตารางเดือน</button></div>
+
+  <div id="adminView" class="hidden">
+    <section class="card">
+      <div class="admin-tabs">
+        <button class="active" onclick="showAdminTab('daily',this)">รายวัน</button>
+        <button onclick="showAdminTab('attendance',this)">แก้เวลา</button>
+        <button onclick="showAdminTab('schedule',this)">วันลา/หยุด</button>
+        <button onclick="showAdminTab('monthly',this)">Monthly Summary</button>
+        <button onclick="showAdminTab('registrations',this)">รออนุมัติ</button>
+        <button onclick="showAdminTab('employees',this)">พนักงาน</button>
+        <button onclick="showAdminTab('report',this)">LINE Report</button>
       </div>
-      <div class="admin-card"><div class="schedule-weekdays schedule-calendar"><div class="schedule-weekday">จ.</div><div class="schedule-weekday">อ.</div><div class="schedule-weekday">พ.</div><div class="schedule-weekday">พฤ.</div><div class="schedule-weekday">ศ.</div><div class="schedule-weekday">ส.</div><div class="schedule-weekday">อา.</div></div><div id="adminScheduleCalendar" class="schedule-calendar"></div><div class="schedule-legend"><span>เขียว: ทำงาน</span><span>เทา: หยุด</span><span>แดง: ลาป่วย</span><span>ส้ม: ลากิจ</span><span>ม่วง: ลาพักร้อน</span><span>กรอบฟ้า: มี Attendance</span></div></div>
-    </div>
-  </section>
-  <div id="adminModal" class="admin-modal"><div class="admin-modal-box"><h3 id="adminModalTitle">แก้ Attendance</h3><div class="admin-form"><label>วันที่</label><input id="adminFormDate" type="date"><label>เวลา</label><input id="adminFormTime" type="time"><label>ประเภท</label><select id="adminFormType"><option>IN</option><option>BREAK_OUT</option><option>BREAK_IN</option><option>OUT</option><option>DAY_IN</option><option>BRANCH_IN</option><option>BRANCH_OUT</option><option>DAY_OUT</option></select><label>สาขา</label><select id="adminFormOfficeId" onchange="syncAdminOfficeName()"></select><input id="adminFormOfficeName" type="hidden"><label>เหตุผล</label><textarea id="adminFormReason" rows="3"></textarea><div class="admin-toolbar"><button class="admin-btn" onclick="saveAdminAttendance()">บันทึก</button><button class="admin-btn secondary" onclick="closeAdminModal()">ยกเลิก</button></div></div></div></div>
-  <div id="adminScheduleModal" class="admin-modal"><div class="admin-modal-box schedule-modal-box"><h3>แก้ตารางงาน</h3><div class="admin-form"><div id="adminScheduleCurrent" class="schedule-current"></div><div id="adminScheduleWarning" class="schedule-warning hidden">วันนี้มีข้อมูลลงเวลาแล้ว การเปลี่ยนสถานะจะไม่ลบ Attendance แต่ระบบจะคำนวณวันนั้นใหม่ตามสถานะล่าสุด</div><label>สถานะวัน</label><select id="adminScheduleStatus" onchange="toggleAdminScheduleShift()"></select><label>กะการทำงาน</label><select id="adminScheduleShift"></select><label>สาขา / ออฟฟิศ</label><select id="adminScheduleOfficeId"></select><label>เหตุผลในการเปลี่ยน</label><textarea id="adminScheduleReason" rows="3" placeholder="จำเป็นต้องกรอก"></textarea><div class="admin-toolbar"><button class="admin-btn" onclick="saveAdminScheduleDay()">บันทึกและคำนวณใหม่</button><button class="admin-btn secondary" onclick="closeAdminScheduleModal()">ยกเลิก</button></div></div></div></div>
+
+      <div id="adminDailyTab">
+        <div class="field"><label>วันที่</label><input id="adminDate" type="date" onchange="loadAdminDaily()"></div>
+        <div id="adminDailyKpis" class="grid2" style="margin-bottom:12px"></div>
+        <div id="adminDailyResult" class="status">เลือกวันที่เพื่อโหลดข้อมูล</div>
+      </div>
+
+      <div id="adminAttendanceTab" class="hidden">
+        <div class="field"><label>พนักงาน</label><select id="attendanceEmployee"></select></div>
+        <div class="field"><label>วันที่</label><input id="attendanceDate" type="date"></div>
+        <button class="secondary" onclick="loadAdminEmployeeDay()">โหลดรายการลงเวลา</button>
+        <div id="attendanceEditor" style="margin-top:12px"></div>
+
+        <hr style="border:0;border-top:1px solid var(--border);margin:16px 0">
+        <h3>เพิ่มการลงเวลา</h3>
+        <div class="grid2">
+          <div class="field"><label>ประเภท</label>
+            <select id="newEventType">
+              <option>IN</option><option>BREAK_OUT</option><option>BREAK_IN</option><option>OUT</option>
+              <option>DAY_IN</option><option>BRANCH_IN</option><option>BRANCH_OUT</option><option>DAY_OUT</option>
+            </select>
+          </div>
+          <div class="field"><label>วันและเวลา</label><input id="newEventAt" type="datetime-local"></div>
+        </div>
+        <div class="field"><label>เหตุผล</label><textarea id="newEventReason"></textarea></div>
+        <button class="secondary save" onclick="adminAddEvent()">เพิ่มและคำนวณใหม่</button>
+      </div>
+
+      <div id="adminScheduleTab" class="hidden">
+        <div class="field"><label>พนักงาน</label><select id="scheduleEmployee"></select></div>
+        <div class="field"><label>วันที่</label><input id="scheduleDate" type="date"></div>
+        <div class="field"><label>สถานะ</label>
+          <select id="scheduleStatus">
+            <option value="WORK">ทำงาน</option><option value="OFF">วันหยุด</option><option value="WFH">WFH</option>
+            <option value="SICK_LEAVE">ลาป่วย</option><option value="BUSINESS_LEAVE">ลากิจ</option>
+            <option value="VACATION">ลาพักร้อน</option><option value="UNPAID_LEAVE">ลาไม่รับค่าจ้าง</option>
+            <option value="HOLIDAY">วันหยุดนักขัตฤกษ์</option>
+          </select>
+        </div>
+        <div class="field"><label>เหตุผล</label><textarea id="scheduleReason"></textarea></div>
+        <button class="secondary save" onclick="adminSaveSchedule()">บันทึกและคำนวณใหม่</button>
+      </div>
 
 
-  <script>
-    const LIFF_ID = '2010336238-Ub6d565R';
-    const GAS_WEB_APP_URL =
-      'https://script.google.com/macros/s/AKfycbzQGNiftsptvD2HJiTlKMZbHrEh3rRIeQqwkcKorYDU0s0Bm1NAGGbOOlsPSlukUW0D/exec';
+      <div id="adminMonthlyTab" class="hidden">
+        <div class="field">
+          <label>เดือน</label>
+          <input id="monthlySummaryMonth" type="month">
+        </div>
+        <button class="secondary" onclick="loadMonthlySummary()">โหลด Monthly Summary</button>
+        <hr style="margin:16px 0;border:0;border-top:1px solid var(--line)">
+        <h3>รายงาน A4 เป็นรูปภาพ</h3>
+        <div class="field">
+          <label>พนักงานสำหรับรายงานรายวันทั้งเดือน</label>
+          <select id="a4ReportEmployee"><option value="">ทุกคน</option></select>
+        </div>
+        <div class="grid2">
+          <button class="secondary" onclick="previewMonthlyDailyA4Image()">ดูตัวอย่างรายวัน</button>
+          <button class="secondary save" onclick="downloadMonthlyDailyA4Images()">ดาวน์โหลดรายวัน</button>
+          <button class="secondary" onclick="previewOrgMonthlyA4Image()">ดูตัวอย่างรายเดือนองค์กร</button>
+          <button class="secondary save" onclick="downloadOrgMonthlyA4Image()">ดาวน์โหลดรายเดือนองค์กร</button>
+        </div>
+        <div class="status" style="margin-top:10px">
+          ใน LINE WebView อาจบล็อกการดาวน์โหลดไฟล์อัตโนมัติ ให้กดดูตัวอย่างแล้วกดค้างที่รูปเพื่อบันทึก หรือเปิดใน Safari เพื่อดาวน์โหลดเป็นไฟล์ได้เสถียรกว่า
+        </div>
+        <div id="a4PreviewBox" class="hidden" style="margin-top:14px">
+          <div class="section-head">
+            <h3>Preview</h3>
+            <button class="secondary" onclick="clearA4Preview()" style="width:auto;margin:0;padding:8px 14px">ปิด Preview</button>
+          </div>
+          <div id="a4PreviewActions" class="grid2" style="margin-bottom:10px"></div>
+          <div id="a4PreviewImageWrap" style="background:#f1f5f9;border:1px solid var(--line);border-radius:18px;padding:10px;overflow:auto"></div>
+        </div>
+        <div id="monthlySummaryResult" style="margin-top:12px"></div>
+      </div>
 
-    const ACTIONS = {
-      IN: { label: 'เข้างาน', className: 'action-in' },
-      BREAK_OUT: { label: 'ออกพัก', className: 'action-break-out' },
-      BREAK_IN: { label: 'กลับจากพัก', className: 'action-break-in' },
-      OUT: { label: 'ออกงาน', className: 'action-out' },
-      DAY_IN: { label: 'เริ่มงานวันนี้', className: 'action-day-in' },
-      BRANCH_IN: { label: 'เข้าสาขา', className: 'action-branch-in' },
-      BRANCH_OUT: { label: 'ออกจากสาขา', className: 'action-branch-out' },
-      DAY_OUT: { label: 'เลิกงานวันนี้', className: 'action-day-out' }
-    };
 
-    const STATE_LABELS = {
-      NOT_STARTED: 'ยังไม่เริ่มงาน',
-      WORKING: 'กำลังทำงาน',
-      ON_BREAK: 'กำลังพัก',
-      COMPLETED: 'ลงเวลาเสร็จแล้ว',
-      TRAVELLING: 'กำลังเดินทาง / ระหว่างสาขา',
-      IN_BRANCH: 'กำลังปฏิบัติงานในสาขา'
-    };
 
-    let lineUserId = '';
-    let lineDisplayName = '';
-    let isLiffReady = false;
-    let isSubmitting = false;
-    let currentEmployee = null;
-    let currentPageState = null;
-    let selectedHistoryMonth = getCurrentMonthKey();
-    let monthlyHistoryCache = {};
+      <div id="adminRegistrationsTab" class="hidden">
+        <button class="secondary" onclick="loadPendingRegistrations()">โหลดรายการรออนุมัติ</button>
+        <div id="pendingRegistrationsList" style="margin-top:12px"></div>
+      </div>
 
-    const TOKEN_RECOVERY_KEY = 'attendance_liff_token_recovery';
-    const TOKEN_RECOVERY_WINDOW_MS = 2 * 60 * 1000;
+      <div id="adminEmployeesTab" class="hidden">
+        <h3>เพิ่มพนักงานใหม่</h3>
+        <div class="grid2">
+          <div class="field"><label>รหัสพนักงาน</label><input id="newEmployeeCode"></div>
+          <div class="field"><label>ชื่อ</label><input id="newEmployeeName"></div>
+        </div>
+        <div class="field"><label>LINE User ID</label><input id="newEmployeeLineId"></div>
+        <div class="grid2">
+          <div class="field"><label>ประเภทพนักงาน</label>
+            <select id="newEmployeeMode">
+              <option value="STANDARD">Standard</option>
+              <option value="MULTI_BRANCH">Multi-branch</option>
+              <option value="STOCK_REFILL">Stock refill</option>
+              <option value="DRIVER">คนขับรถ</option>
+            </select>
+          </div>
+          <div class="field"><label>Default Office</label><select id="newEmployeeOffice"></select></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>ตำแหน่ง</label><input id="newEmployeePosition"></div>
+          <div class="field"><label>แผนก</label><input id="newEmployeeDepartment"></div>
+        </div>
+        <button class="secondary save" onclick="adminCreateEmployee()">เพิ่มพนักงาน</button>
+        <div id="employeeCreateResult" style="margin-top:10px"></div>
+        <hr style="margin:16px 0;border:0;border-top:1px solid var(--line)">
+        <h3>จัดการสถานะพนักงาน</h3>
+        <div class="field">
+          <label>เลือกพนักงาน</label>
+          <select id="employeeStatusSelect"></select>
+        </div>
+        <div class="grid2">
+          <button class="secondary save" onclick="adminSetEmployeeActive(true)">เปิดใช้งาน</button>
+          <button class="secondary danger" onclick="adminSetEmployeeActive(false)">ปิดใช้งาน / Inactive</button>
+        </div>
+        <div id="employeeStatusResult" style="margin-top:10px"></div>
+      </div>
 
-    window.addEventListener('load', function () {
-      initLiff();
+      <div id="adminReportTab" class="hidden">
+        <div class="field"><label>วันที่รายงาน</label><input id="reportDate" type="date"></div>
+        <div class="field">
+          <label>ประเภทรายงาน</label>
+          <select id="reportType">
+            <option value="MIDDAY">รายงาน 13:00</option>
+            <option value="END_DAY">รายงาน 22:00</option>
+          </select>
+        </div>
+        <div class="row-actions">
+          <button class="secondary" onclick="previewLineReport()">ดูตัวอย่างรายงาน</button>
+          <button class="secondary save" onclick="sendLineReport()">ส่ง LINE Report</button>
+        </div>
+        <pre id="reportPreview">ยังไม่ได้สร้างรายงาน</pre>
+        <div class="status">การส่งตามเวลายังคงทำงานผ่าน Scheduled Trigger/Cron โดยเรียก endpoint เดียวกับปุ่มส่งนี้</div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+"use strict";
+const CONFIG = {
+  LIFF_ID:"2010336238-Ub6d565R",
+  API_URL:"https://rlqecfzddxpywbbbiirg.supabase.co/functions/v1/rapid-processor",
+  TIMEOUT:15000
+};
+const LABELS={IN:"เข้างาน",BREAK_OUT:"ออกพัก",BREAK_IN:"กลับจากพัก",OUT:"ออกงาน",
+ DAY_IN:"เริ่มวัน",BRANCH_IN:"เข้าสาขา",BRANCH_OUT:"ออกจากสาขา",DAY_OUT:"จบวัน"};
+let boot=null,today=null,nextAction=null,saving=false,savingStartedAt=0,employees=[];
+let realtimeTimer=null;
+
+document.addEventListener("DOMContentLoaded",init);
+
+async function init(){
+ try{
+  setStatus("กำลังเชื่อมต่อ LINE…");
+  await liff.init({liffId:CONFIG.LIFF_ID});
+  if(!liff.isInClient()) throw new Error("กรุณาเปิดระบบจากในแอป LINE");
+  if(!liff.isLoggedIn()){liff.login();return}
+  boot=await api("bootstrap");
+
+  if(!boot.employee){
+    await showRegistrationForm();
+    setStatus("ยังไม่มีข้อมูลพนักงาน กรุณากรอกแบบฟอร์มลงทะเบียน","ok");
+    return;
+  }
+
+  renderProfile();
+  ["clockCard","todayEventsCard","historyCard","summaryCard"].forEach(id=>document.getElementById(id).classList.remove("hidden"));
+  if(boot.isAdmin){
+    document.getElementById("modeSwitcher").classList.remove("hidden");
+    document.getElementById("adminBadge").classList.remove("hidden");
+    await loadAdminBootstrap();
+  }
+  const d=bkkDate(); document.getElementById("historyMonth").value=d.slice(0,7);
+  ["adminDate","attendanceDate","scheduleDate","reportDate"].forEach(id=>{const e=document.getElementById(id);if(e)e.value=d});
+  document.getElementById("monthlySummaryMonth").value=d.slice(0,7);
+  await loadToday(); await loadHistory(); startRealtimeRefresh(); setStatus("พร้อมใช้งาน","ok");
+ }catch(e){setStatus(errText(e),"err");console.error(e)}
+}
+
+async function api(action,payload={}){
+ const token=liff.getAccessToken(); if(!token) throw new Error("MISSING_LINE_TOKEN");
+ const c=new AbortController(),t=setTimeout(()=>c.abort(),CONFIG.TIMEOUT);
+ try{
+  const r=await fetch(`${CONFIG.API_URL}?action=${encodeURIComponent(action)}`,{
+   method:"POST",headers:{"Content-Type":"application/json","x-line-access-token":token},
+   body:JSON.stringify(payload),signal:c.signal
+  });
+  const x=await r.json(); if(!r.ok||!x.ok) throw new Error(x.error||`HTTP ${r.status}`); return x;
+ }finally{clearTimeout(t)}
+}
+
+function setMode(mode){
+ const admin=mode==="admin";
+ document.getElementById("employeeView").classList.toggle("hidden",admin);
+ document.getElementById("adminView").classList.toggle("hidden",!admin);
+ document.getElementById("employeeModeBtn").classList.toggle("active",!admin);
+ document.getElementById("adminModeBtn").classList.toggle("active",admin);
+ if(admin) loadAdminDaily();
+}
+
+function renderProfile(){
+ const p=boot.profile||{},e=boot.employee;
+ document.getElementById("profileCard").classList.remove("hidden");
+ document.getElementById("avatar").src=p.pictureUrl||"";
+ document.getElementById("employeeName").textContent=e.name;
+ document.getElementById("employeeMeta").textContent=`${e.employee_code} • ${e.attendance_mode}`;
+}
+
+
+function startRealtimeRefresh(){
+ if(realtimeTimer)clearInterval(realtimeTimer);
+ realtimeTimer=setInterval(async()=>{
+  if(document.hidden||saving)return;
+  try{
+   if(!document.getElementById("employeeView").classList.contains("hidden")){
+    await loadToday();
+   }else{
+    const active=document.querySelector(".admin-tabs button.active")?.textContent||"";
+    if(active.includes("รายวัน"))await loadAdminDaily();
+    if(active.includes("แก้เวลา"))await loadAdminEmployeeDay();
+    if(active.includes("Monthly"))await loadMonthlySummary();
+   }
+  }catch(e){console.warn("Realtime refresh failed",e)}
+ },15000);
+}
+
+document.addEventListener("visibilitychange",()=>{
+ if(!document.hidden&&boot){
+  if(saving && savingStartedAt && Date.now()-savingStartedAt>10000){
+   forceUnlockClockButtons('visibility');
+  }
+  loadToday().catch(()=>{});
+ }
+});
+
+
+async function showRegistrationForm(){
+ const card=document.getElementById("registrationCard");
+ card.classList.remove("hidden");
+
+ const lineInput=document.getElementById("regLineUserId");
+ if(lineInput)lineInput.value=boot.profile?.userId||"";
+
+ try{
+  const r=await api("registration_options");
+  if(r.existingRequest){
+   const result=document.getElementById("registrationResult");
+   if(result){
+    result.innerHTML=`<div class="status">${esc(r.existingRequest.status)}: คำขอลงทะเบียนถูกส่งแล้ว</div>`;
+   }
+  }
+ }catch(e){
+  // Do not block the simple registration form if option loading fails.
+ }
+}
+
+async function submitEmployeeRegistration(){
+ const name=document.getElementById("regName").value.trim();
+ if(!name){
+  alert("กรุณากรอกชื่อพนักงาน");
+  return;
+ }
+
+ try{
+  await api("submit_employee_registration",{name});
+  alert("ส่งคำขอแล้ว รอแอดมินอนุมัติ");
+  await bootstrap();
+ }catch(e){
+  alert(errText(e));
+ }
+}
+
+async function loadPendingRegistrations(){
+ const box=document.getElementById("pendingRegistrationsList");
+ try{
+  const r=await api("admin_pending_registrations");
+  const rows=r.rows||[];
+  box.innerHTML=rows.length?rows.map(x=>`<div class="event" style="display:block">
+   <div><b>${esc(x.employee_code)} - ${esc(x.name)}</b></div>
+   <div class="muted" style="margin-top:5px">
+    ${esc(x.attendance_mode)} • ${esc(x.department||"-")} • ${esc(x.position||"-")}<br>
+    LINE: ${esc(x.line_user_id)}
+   </div>
+   <div class="row-actions" style="margin-top:9px">
+    <button class="save" onclick="approveRegistration('${x.id}')">อนุมัติ</button>
+    <button class="danger" onclick="rejectRegistration('${x.id}')">ปฏิเสธ</button>
+   </div>
+  </div>`).join(""):'<div class="status">ไม่มีคำขอรออนุมัติ</div>';
+ }catch(e){
+  box.innerHTML=`<div class="status err">${esc(errText(e))}</div>`;
+ }
+}
+
+async function approveRegistration(id){
+ if(!confirm("ยืนยันอนุมัติพนักงานคนนี้"))return;
+ await api("admin_approve_registration",{registrationId:id});
+ await Promise.all([loadPendingRegistrations(),loadAdminBootstrap()]);
+ alert("อนุมัติและสร้าง Employee สำเร็จ");
+}
+
+async function rejectRegistration(id){
+ const reason=prompt("เหตุผลที่ปฏิเสธ"); if(!reason)return;
+ await api("admin_reject_registration",{registrationId:id,reason});
+ await loadPendingRegistrations();
+}
+
+async function loadToday(){
+ const r=await api("today",{date:bkkDate()}); today=r; renderToday(); determineNextAction(); updateWeekendWfhButton();
+}
+
+function renderToday(){
+ const s=today.schedule,ev=today.events||[],d=today.daily;
+ document.getElementById("todayLabel").textContent=thaiDate(bkkDate());
+ document.getElementById("scheduleBox").innerHTML=s?
+  `<b>${esc(s.schedule_status)}</b><br>${esc(s.shift?.name||"ไม่ระบุกะ")} • ${esc(s.office?.name||"ไม่ระบุสถานที่")}`:
+  "<b>ไม่พบตารางงานวันนี้</b>";
+ document.getElementById("eventCount").textContent=`${ev.length} รายการ`;
+ document.getElementById("timeline").innerHTML=ev.length?ev.map(x=>`<div class="event"><b>${esc(LABELS[x.event_type]||x.event_type)}</b><span class="muted">${timeTH(x.event_at)}</span></div>`).join(""):'<div class="status">ยังไม่มีรายการ</div>';
+ const m=[["สถานะ",d?.work_status||"—"],["ทำงาน",hours(d?.paid_work_hours)],["ขาด",hours(d?.short_hours)],["เกิน",hours(d?.over_hours)],["ชดเชย",hours(d?.makeup_hours)],["สุทธิ",hours(d?.net_hours)]];
+ document.getElementById("summaryGrid").innerHTML=m.map(([a,b])=>`<div class="metric"><span class="muted">${a}</span><b>${esc(b)}</b></div>`).join("");
+}
+
+function determineNextAction(){
+ const mode=(boot.employee&&boot.employee.attendance_mode)||"STANDARD";
+ const events=today.events||[];
+ const types=events.map(x=>x.event_type);
+ const st=today.schedule?.schedule_status;
+
+ const mainBtn=document.getElementById("nextActionBtn");
+ const driverActions=document.getElementById("driverActions");
+ const driverWorkBtn=document.getElementById("driverWorkBtn");
+ const driverBreakBtn=document.getElementById("driverBreakBtn");
+
+ const optional=document.getElementById("baOptionalActions");
+ const breakBtn=document.getElementById("baBreakBtn");
+ const endBtn=document.getElementById("baEndDayBtn");
+
+ mainBtn.classList.remove("hidden");
+ driverActions.classList.add("hidden");
+
+ optional.classList.add("hidden");
+ breakBtn.classList.add("hidden");
+ endBtn.classList.add("hidden");
+
+ const noClock=["WFH","SICK_LEAVE","BUSINESS_LEAVE","VACATION","HOLIDAY","UNPAID_LEAVE"].includes(st);
+ if(noClock){
+  setNext(null,st);
+  return;
+ }
+
+ if(mode==="DRIVER"){
+  nextAction=null;
+  mainBtn.classList.add("hidden");
+  driverActions.classList.remove("hidden");
+
+  const hasIn=types.includes("IN");
+  const hasOut=types.includes("OUT");
+  const hasBreakOut=types.includes("BREAK_OUT");
+  const hasBreakIn=types.includes("BREAK_IN");
+
+  const workAction=!hasIn ? "IN" : (!hasOut ? "OUT" : null);
+  driverWorkBtn.dataset.action=workAction||"";
+  driverWorkBtn.disabled=!workAction;
+  driverWorkBtn.textContent=
+    workAction==="IN" ? "เข้างาน" :
+    workAction==="OUT" ? "ออกงาน" :
+    "ลงเวลางานครบแล้ว";
+  driverWorkBtn.className=
+    "primary-action "+(workAction==="OUT" ? "btn-out" : "btn-in");
+
+  let breakAction=null;
+  let breakLabel="พักครบแล้ว";
+
+  if(!hasIn){
+    breakLabel="กดเข้างานก่อน";
+  }else if(hasOut){
+    breakLabel="ปิดวันทำงานแล้ว";
+  }else if(!hasBreakOut){
+    breakAction="BREAK_OUT";
+    breakLabel="ออกพัก";
+  }else if(!hasBreakIn){
+    breakAction="BREAK_IN";
+    breakLabel="เข้าพัก";
+  }
+
+  driverBreakBtn.dataset.action=breakAction||"";
+  driverBreakBtn.disabled=!breakAction;
+  driverBreakBtn.textContent=breakLabel;
+  driverBreakBtn.className=
+    "primary-action "+(breakAction==="BREAK_IN" ? "btn-breakin" : "btn-breakout");
+
+  return;
+ }
+
+ if(mode==="MULTI_BRANCH"){
+  const last=events.length?events[events.length-1].event_type:null;
+
+  if(!types.includes("DAY_IN")){
+   return setNext("DAY_IN","เริ่มวันทำงาน");
+  }
+
+  if(last==="DAY_OUT"){
+   return setNext(null,"ลงเวลาครบแล้ว");
+  }
+
+  if(last==="BREAK_OUT"){
+   return setNext("BREAK_IN","กลับจากพัก");
+  }
+
+  if(last==="DAY_IN"||last==="BRANCH_OUT"){
+   setNext("BRANCH_IN","เข้าสาขา");
+   optional.classList.remove("hidden");
+   endBtn.classList.remove("hidden");
+   return;
+  }
+
+  if(last==="BRANCH_IN"||last==="BREAK_IN"){
+   setNext("BRANCH_OUT","ออกจากสาขา");
+   optional.classList.remove("hidden");
+   breakBtn.classList.remove("hidden");
+   return;
+  }
+
+  return setNext(null,"กรุณารีเฟรชข้อมูล");
+ }
+
+ if(!types.includes("IN")) return setNext("IN","เข้างาน");
+ if(!types.includes("BREAK_OUT")&&!types.includes("OUT")) return setNext("BREAK_OUT","ออกพัก");
+ if(types.includes("BREAK_OUT")&&!types.includes("BREAK_IN")) return setNext("BREAK_IN","กลับจากพัก");
+ if(!types.includes("OUT")) return setNext("OUT","ออกงาน");
+ setNext(null,"ลงเวลาครบแล้ว");
+}
+function setNext(type,label){
+ nextAction=type; const b=document.getElementById("nextActionBtn"); b.disabled=!type;b.textContent=label;
+ b.className="primary-action "+({IN:"btn-in",BREAK_OUT:"btn-breakout",BREAK_IN:"btn-breakin",OUT:"btn-out",DAY_IN:"btn-day",DAY_OUT:"btn-day",BRANCH_IN:"btn-branch",BRANCH_OUT:"btn-branch"}[type]||"btn-in");
+}
+
+async function recordDriverWorkAction(){
+ const btn=document.getElementById("driverWorkBtn");
+ const action=btn?.dataset.action;
+ if(action) await recordSpecificAction(action);
+}
+
+async function recordDriverBreakAction(){
+ const btn=document.getElementById("driverBreakBtn");
+ const action=btn?.dataset.action;
+ if(action) await recordSpecificAction(action);
+}
+
+async function recordNextAction(){
+ if(!nextAction)return;
+ await recordSpecificAction(nextAction);
+}
+
+
+function setClockButtonsDisabled(disabled){
+ const ids=["nextActionBtn","driverWorkBtn","driverBreakBtn","baBreakBtn","baEndDayBtn"];
+ ids.forEach(id=>{
+  const b=document.getElementById(id);
+  if(b)b.disabled=!!disabled;
+ });
+ const reset=document.getElementById("resetClockButton");
+ if(reset)reset.classList.toggle("hidden",!disabled);
+}
+
+function forceUnlockClockButtons(reason="auto"){
+ saving=false;
+ savingStartedAt=0;
+ setClockButtonsDisabled(false);
+
+ try{
+  if(today)determineNextAction();
+ }catch(e){
+  console.error("determineNextAction failed after unlock",e);
+ }
+
+ const reset=document.getElementById("resetClockButton");
+ if(reset)reset.classList.add("hidden");
+
+ if(reason==="manual"){
+  setStatus("รีเซ็ตปุ่มแล้ว กรุณาตรวจสอบรายการล่าสุดก่อนกดซ้ำ","ok");
+ }else if(reason==="timeout"){
+  setStatus("ระบบปลดล็อกปุ่มให้อัตโนมัติ เพราะคำสั่งก่อนหน้าค้างนานเกินไป กรุณาตรวจสอบรายการล่าสุดก่อนกดซ้ำ","err");
+ }
+}
+
+setInterval(()=>{
+ if(saving && savingStartedAt && Date.now()-savingStartedAt>30000){
+  forceUnlockClockButtons("timeout");
+ }
+},5000);
+
+
+async function recordSpecificAction(eventType){
+ if(!eventType)return;
+
+ if(saving){
+  const elapsed=Date.now()-savingStartedAt;
+  if(elapsed>30000){
+   forceUnlockClockButtons("timeout");
+  }else{
+   setStatus("ระบบกำลังบันทึกรายการก่อนหน้า กรุณารอสักครู่","err");
+   return;
+  }
+ }
+
+ saving=true;
+ savingStartedAt=Date.now();
+ setClockButtonsDisabled(true);
+
+ const resetTimer=setTimeout(()=>{
+  if(saving)forceUnlockClockButtons("timeout");
+ },30000);
+
+ try{
+  setStatus(`กำลังบันทึก ${LABELS[eventType]||eventType}…`);
+  const pos=await geo();
+
+  await api("record",{
+   eventType,
+   eventAt:new Date().toISOString(),
+   workDate:bkkDate(),
+   latitude:pos.coords.latitude,
+   longitude:pos.coords.longitude,
+   gpsAccuracy:pos.coords.accuracy
+  });
+
+  await loadToday();
+  await loadHistory();
+  setStatus("บันทึกสำเร็จ","ok");
+ }catch(e){
+  setStatus(errText(e),"err");
+ }finally{
+  clearTimeout(resetTimer);
+  saving=false;
+  savingStartedAt=0;
+  setClockButtonsDisabled(false);
+
+  try{
+   determineNextAction();
+  }catch(e){
+   console.error("determineNextAction failed",e);
+  }
+
+  const reset=document.getElementById("resetClockButton");
+  if(reset)reset.classList.add("hidden");
+ }
+}
+
+async function selfSetWeekendWfh(){
+ if(!confirm("ยืนยันบันทึกวันนี้เป็น WFH 9 ชั่วโมง"))return;
+ try{
+  setStatus("กำลังบันทึก WFH…");
+  await api("self_weekend_wfh",{date:bkkDate()});
+  await loadToday();
+  await loadHistory();
+  setStatus("บันทึก WFH สำเร็จ","ok");
+ }catch(e){
+  setStatus(errText(e),"err");
+ }
+}
+
+function isBangkokWeekend(dateStr=bkkDate()){
+ const [y,m,d]=dateStr.split("-").map(Number);
+ const day=new Date(Date.UTC(y,m-1,d)).getUTCDay();
+ return day===0||day===6;
+}
+
+function updateWeekendWfhButton(){
+ const btn=document.getElementById("weekendWfhBtn");
+ if(!btn)return;
+ const isWeekend=isBangkokWeekend();
+ const alreadyWfh=today?.schedule?.schedule_status==="WFH";
+ const hasEvents=(today?.events||[]).length>0;
+ btn.classList.toggle("hidden",!isWeekend||alreadyWfh||hasEvents);
+}
+
+async function loadHistory(){
+ const month=document.getElementById("historyMonth").value||bkkDate().slice(0,7),box=document.getElementById("historyList");
+ try{
+  const r=await api("employee_month",{month});
+  const rows=r.rows||[];
+  box.innerHTML=rows.length?rows.map(x=>`<div class="event" style="display:block">
+   <div style="display:flex;justify-content:space-between"><b>${thaiDate(x.work_date)}</b><span class="muted">${esc(x.work_status||x.schedule_status||"—")}</span></div>
+   <div class="muted" style="margin-top:6px">เข้า ${timeTH(x.first_in_at)} • ออก ${timeTH(x.last_out_at)}<br>ทำงาน ${hours(x.paid_work_hours)} • ขาด ${hours(x.short_hours)} • เกิน ${hours(x.over_hours)}</div>
+  </div>`).join(""):'<div class="status">ไม่พบข้อมูล</div>';
+ }catch(e){box.innerHTML=`<div class="status err">${esc(errText(e))}</div>`}
+}
+
+async function loadAdminBootstrap(){
+ const r=await api("admin_bootstrap"); employees=r.employees||[];
+ const officeOpts=(r.offices||[]).map(o=>`<option value="${o.id}">${esc(o.office_code)} - ${esc(o.name)}</option>`).join("");
+ document.getElementById("newEmployeeOffice").innerHTML='<option value="">ไม่ระบุ</option>'+officeOpts;
+
+ const activeEmployees=employees.filter(e=>e.active!==false);
+ const activeOpts=activeEmployees.map(e=>`<option value="${e.id}">${esc(e.employee_code)} - ${esc(e.name)}</option>`).join("");
+ const allOpts=employees.map(e=>`<option value="${e.id}">${esc(e.employee_code)} - ${esc(e.name)}${e.active===false?" (Inactive)":""}</option>`).join("");
+
+ document.getElementById("attendanceEmployee").innerHTML=activeOpts;
+ document.getElementById("scheduleEmployee").innerHTML=activeOpts;
+
+ const a4Select=document.getElementById("a4ReportEmployee");
+ if(a4Select){a4Select.innerHTML='<option value="">ทุกคน</option>'+activeOpts;}
+
+ const statusSelect=document.getElementById("employeeStatusSelect");
+ if(statusSelect){statusSelect.innerHTML=allOpts;}
+}
+
+function showAdminTab(name,btn){
+ ["daily","attendance","schedule","monthly","registrations","employees","report"].forEach(x=>document.getElementById("admin"+cap(x)+"Tab").classList.toggle("hidden",x!==name));
+ document.querySelectorAll(".admin-tabs button").forEach(x=>x.classList.remove("active"));btn.classList.add("active");
+}
+
+async function loadAdminDaily(){
+ const box=document.getElementById("adminDailyResult");
+ const kpi=document.getElementById("adminDailyKpis");
+ try{
+  const r=await api("admin_daily",{date:document.getElementById("adminDate").value});
+  const rows=r.rows||[], summary=r.summary||{};
+  const cards=[
+    ["เข้างานแล้ว",summary.checked_in||0],
+    ["ออกงานแล้ว",summary.checked_out||0],
+    ["ยังไม่เข้างาน",summary.not_checked_in||0],
+    ["หยุด",summary.off||0],
+    ["ลา",summary.leave||0]
+  ];
+  kpi.innerHTML=cards.map(([a,b])=>`<div class="metric"><span class="muted">${a}</span><b>${b} คน</b></div>`).join("");
+
+  box.className="";
+  box.innerHTML=rows.length?`<table class="table"><thead><tr><th>พนักงาน</th><th>สถานะ</th><th>เข้า</th><th>ออก</th><th>ทำงาน</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.employee.employee_code)}<br>${esc(x.employee.name)}</td><td>${esc(x.work_status||x.schedule_status)}</td><td>${timeTH(x.first_in_at)}</td><td>${timeTH(x.last_out_at)}</td><td>${hours(x.paid_work_hours)}</td></tr>`).join("")}</tbody></table>`:'<div class="status">ไม่พบข้อมูล</div>';
+ }catch(e){
+  kpi.innerHTML="";
+  box.className="status err";
+  box.textContent=errText(e);
+ }
+}
+async function loadAdminEmployeeDay(){
+ const r=await api("admin_employee_day",{employeeId:document.getElementById("attendanceEmployee").value,date:document.getElementById("attendanceDate").value});
+ const box=document.getElementById("attendanceEditor"),rows=r.events||[];
+ box.innerHTML=rows.length?rows.map(x=>`<div class="event" style="display:block">
+  <div><b>${esc(x.event_type)}</b> ${timeTH(x.event_at)}</div>
+  <div class="row-actions" style="margin-top:8px">
+   <button onclick="adminEditEvent('${x.id}','${x.event_at}','${x.event_type}')">แก้รายการ</button>
+   <button class="danger" onclick="adminDeleteEvent('${x.id}')">ลบ</button>
+  </div></div>`).join(""):'<div class="status">ไม่พบรายการ</div>';
+}
+
+async function adminEditEvent(id,current,currentType){
+ const allowed=["IN","BREAK_OUT","BREAK_IN","OUT","DAY_IN","BRANCH_IN","BRANCH_OUT","DAY_OUT","WORK_IN","WORK_OUT","REFILL_IN","REFILL_OUT"];
+ const eventType=(prompt("ประเภทการลงเวลา",currentType)||"").trim().toUpperCase();
+ if(!eventType)return;
+ if(!allowed.includes(eventType)){
+  alert("ประเภทการลงเวลาไม่ถูกต้อง");
+  return;
+ }
+
+ const defaultValue=toBangkokLocalInput(current);
+ const v=prompt("กรอกวันเวลาไทย รูปแบบ YYYY-MM-DDTHH:mm",defaultValue);
+ if(!v)return;
+
+ const reason=prompt("เหตุผลในการแก้ไข");
+ if(!reason)return;
+
+ const eventAt=bangkokLocalToIso(v);
+ await api("admin_update_event",{eventId:id,eventAt,eventType,reason});
+ await Promise.all([loadAdminEmployeeDay(),loadAdminDaily(),loadMonthlySummary()]);
+}
+
+async function adminDeleteEvent(id){
+ const reason=prompt("เหตุผลในการลบ"); if(!reason)return;
+ await api("admin_delete_event",{eventId:id,reason}); await Promise.all([loadAdminEmployeeDay(),loadAdminDaily(),loadMonthlySummary()]);
+}
+
+async function adminAddEvent(){
+ const reason=document.getElementById("newEventReason").value.trim(); if(!reason)return alert("กรุณากรอกเหตุผล");
+ await api("admin_add_event",{employeeId:document.getElementById("attendanceEmployee").value,eventType:document.getElementById("newEventType").value,eventAt:bangkokLocalToIso(document.getElementById("newEventAt").value),reason});
+ await Promise.all([loadAdminEmployeeDay(),loadAdminDaily(),loadMonthlySummary()]);alert("เพิ่มและคำนวณใหม่แล้ว");
+}
+
+async function adminSaveSchedule(){
+ const reason=document.getElementById("scheduleReason").value.trim();if(!reason)return alert("กรุณากรอกเหตุผล");
+ await api("admin_update_schedule",{employeeId:document.getElementById("scheduleEmployee").value,workDate:document.getElementById("scheduleDate").value,scheduleStatus:document.getElementById("scheduleStatus").value,reason});
+ await Promise.all([loadAdminDaily(),loadMonthlySummary()]);alert("บันทึกและคำนวณใหม่แล้ว");
+}
+
+
+
+
+function a4Canvas(orientation="portrait",scale=2){
+ const base=orientation==="landscape"?{w:1123,h:794}:{w:794,h:1123};
+ const canvas=document.createElement("canvas");
+ canvas.width=base.w*scale;
+ canvas.height=base.h*scale;
+ const ctx=canvas.getContext("2d");
+ ctx.scale(scale,scale);
+ ctx.fillStyle="#ffffff";
+ ctx.fillRect(0,0,base.w,base.h);
+ return {canvas,ctx,w:base.w,h:base.h};
+}
+
+function drawText(ctx,text,x,y,opt={}){
+ const size=opt.size||18;
+ const weight=opt.weight||"400";
+ const color=opt.color||"#111827";
+ const align=opt.align||"left";
+ ctx.font=`${weight} ${size}px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif`;
+ ctx.fillStyle=color;
+ ctx.textAlign=align;
+ ctx.textBaseline="top";
+ ctx.fillText(String(text??""),x,y);
+}
+
+function drawLine(ctx,x1,y1,x2,y2,color="#e5e7eb"){
+ ctx.strokeStyle=color;
+ ctx.lineWidth=1;
+ ctx.beginPath();
+ ctx.moveTo(x1,y1);
+ ctx.lineTo(x2,y2);
+ ctx.stroke();
+}
+
+function roundRect(ctx,x,y,w,h,r){
+ ctx.beginPath();
+ ctx.moveTo(x+r,y);
+ ctx.arcTo(x+w,y,x+w,y+h,r);
+ ctx.arcTo(x+w,y+h,x,y+h,r);
+ ctx.arcTo(x,y+h,x,y,r);
+ ctx.arcTo(x,y,x+w,y,r);
+ ctx.closePath();
+}
+
+function safeFileName(s){
+ return String(s||"report").replace(/[\\/:*?"<>|]/g,"-").replace(/\s+/g,"_").slice(0,120);
+}
+
+function statusThai(status){
+ const map={
+  COMPLETE:"ครบ",
+  OVER:"เกิน",
+  SHORT:"ขาด",
+  NO_CHECKOUT:"ยังไม่ออก",
+  ABSENT:"ไม่มา",
+  OFF:"หยุด",
+  WFH:"WFH",
+  SICK_LEAVE:"ลาป่วย",
+  BUSINESS_LEAVE:"ลากิจ",
+  VACATION:"ลาพักร้อน",
+  UNPAID_LEAVE:"ลาไม่รับค่าจ้าง",
+  HOLIDAY:"วันหยุด",
+  WORK:"ทำงาน",
+  NO_SCHEDULE:"ไม่มีตาราง",
+  FUTURE:"อนาคต",
+  IN_PROGRESS:"กำลังทำงาน",
+  CONTINUATION:"ต่อเนื่อง"
+ };
+ return map[status]||status||"-";
+}
+
+function eventTimeShort(v){
+ return timeTH(v)==="—"?"-":timeTH(v);
+}
+
+function isLineWebView(){
+ const ua=navigator.userAgent||"";
+ return /Line\//i.test(ua)||/LIFF/i.test(ua);
+}
+
+function canvasToDataUrl(canvas){
+ return canvas.toDataURL("image/png");
+}
+
+function showA4Preview(canvas,filename,message=""){
+ const box=document.getElementById("a4PreviewBox");
+ const actions=document.getElementById("a4PreviewActions");
+ const wrap=document.getElementById("a4PreviewImageWrap");
+ const dataUrl=canvasToDataUrl(canvas);
+
+ if(!box||!actions||!wrap){
+  downloadDataUrl(dataUrl,filename);
+  return;
+ }
+
+ box.classList.remove("hidden");
+ wrap.innerHTML=`<img id="a4PreviewImage" src="${dataUrl}" alt="A4 report preview" style="width:100%;height:auto;border-radius:12px;background:white">`;
+
+ const lineNote=isLineWebView()
+  ? `<div class="status" style="grid-column:1/-1">ตอนนี้กำลังเปิดผ่าน LINE: กดค้างที่รูปเพื่อบันทึกภาพ หรือกดเปิดรูปเต็มจอแล้วใช้เมนูบันทึก ถ้าต้องการดาวน์โหลดเป็นไฟล์หลายไฟล์ ให้เปิดผ่าน Safari</div>`
+  : "";
+
+ actions.innerHTML=`
+  ${lineNote}
+  ${message?`<div class="status" style="grid-column:1/-1">${esc(message)}</div>`:""}
+  <button class="secondary save" onclick="downloadDataUrl('${dataUrl}','${esc(filename)}')">บันทึก/ดาวน์โหลด PNG</button>
+  <button class="secondary" onclick="openPreviewImage()">เปิดรูปเต็มจอ</button>
+ `;
+ box.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function clearA4Preview(){
+ const box=document.getElementById("a4PreviewBox");
+ if(box)box.classList.add("hidden");
+ const actions=document.getElementById("a4PreviewActions");
+ const wrap=document.getElementById("a4PreviewImageWrap");
+ if(actions)actions.innerHTML="";
+ if(wrap)wrap.innerHTML="";
+}
+
+function openPreviewImage(){
+ const img=document.getElementById("a4PreviewImage");
+ if(!img)return;
+ const url=img.src;
+ if(window.liff&&liff.openWindow){
+  try{liff.openWindow({url,external:true});return;}catch(e){}
+ }
+ window.open(url,"_blank");
+}
+
+function downloadDataUrl(dataUrl,filename){
+ try{
+  const a=document.createElement("a");
+  a.href=dataUrl;
+  a.download=filename;
+  a.rel="noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+ }catch(e){
+  const img=document.getElementById("a4PreviewImage");
+  if(img)img.scrollIntoView({behavior:"smooth"});
+ }
+}
+
+function downloadCanvasPng(canvas,filename){
+ const dataUrl=canvasToDataUrl(canvas);
+ if(isLineWebView()){
+  showA4Preview(canvas,filename,"LINE อาจไม่ยอมดาวน์โหลดอัตโนมัติ จึงแสดง Preview ให้บันทึกรูปได้");
+  return false;
+ }
+ downloadDataUrl(dataUrl,filename);
+ return true;
+}
+
+
+function dateKeyTHFromIso(iso){
+ if(!iso)return "";
+ const d=new Date(iso);
+ if(Number.isNaN(d.getTime()))return "";
+ const parts=new Intl.DateTimeFormat("en-CA",{
+  timeZone:"Asia/Bangkok",
+  year:"numeric",
+  month:"2-digit",
+  day:"2-digit"
+ }).formatToParts(d);
+ const y=parts.find(p=>p.type==="year")?.value;
+ const m=parts.find(p=>p.type==="month")?.value;
+ const day=parts.find(p=>p.type==="day")?.value;
+ return `${y}-${m}-${day}`;
+}
+
+function shortDateFromDateKey(dateKey){
+ if(!dateKey||dateKey.length<10)return "";
+ return `${dateKey.slice(8,10)}/${dateKey.slice(5,7)}`;
+}
+
+function timeOnlyTH(v){
+ const t=timeTH(v);
+ return t==="—"?"-":t;
+}
+
+function applyContinuationRowsForMonthlyReport(rows){
+ const out=(rows||[]).map(r=>({...r}));
+ const byDate={};
+ out.forEach(r=>{ if(r.work_date)byDate[r.work_date]=r; });
+
+ for(const row of out){
+  if(!row.work_date||!row.last_out_at)continue;
+  const outDate=dateKeyTHFromIso(row.last_out_at);
+  if(!outDate||outDate<=row.work_date)continue;
+
+  const continuation=byDate[outDate];
+  if(!continuation)continue;
+
+  const hasOwnClock=
+   continuation.first_in_at ||
+   continuation.last_out_at ||
+   Number(continuation.paid_work_hours||0)>0;
+
+  if(!hasOwnClock){
+   continuation.__continuation=true;
+   continuation.__from_date=row.work_date;
+   continuation.__from_label=shortDateFromDateKey(row.work_date);
+   continuation.__out_at=row.last_out_at;
+   continuation.work_status="CONTINUATION";
+   continuation.attendance_status="CONTINUATION";
+   continuation.schedule_status="CONTINUATION";
+   continuation.first_in_at=null;
+   continuation.break_out_at=null;
+   continuation.break_in_at=null;
+   continuation.last_out_at=row.last_out_at;
+   continuation.paid_work_hours=0;
+   continuation.short_hours=0;
+   continuation.over_hours=0;
+   continuation.makeup_hours=0;
+   continuation.net_hours=0;
+  }
+
+  row.__cross_midnight=true;
+ }
+
+ return out;
+}
+
+
+function drawEmployeeDailyA4(employeeReport,month){
+ const {canvas,ctx,w,h}=a4Canvas("portrait",2);
+ const employee=employeeReport.employee||{};
+ const rows=applyContinuationRowsForMonthlyReport(employeeReport.rows||[]);
+
+ drawText(ctx,"Kitty Attendance",40,34,{size:18,weight:"700",color:"#0f172a"});
+ drawText(ctx,"รายงานรายวันทั้งเดือน",40,62,{size:30,weight:"800"});
+ drawText(ctx,`${employee.employee_code||""} - ${employee.name||""}`,40,104,{size:22,weight:"700"});
+ drawText(ctx,`เดือน ${month}`,40,134,{size:16,color:"#64748b"});
+
+ const summary=employeeReport.summary||{};
+ const cardY=166, cardH=54, gap=10;
+ const cards=[
+  ["วันทำงาน",summary.work_days||0],
+  ["ชั่วโมงทำงาน",hours(summary.paid_work_hours||0)],
+  ["ขาด",hours(summary.short_hours||0)],
+  ["เกิน",hours(summary.over_hours||0)]
+ ];
+ const cardW=(w-80-gap*3)/4;
+ cards.forEach((c,i)=>{
+  const x=40+i*(cardW+gap);
+  ctx.fillStyle="#f8fafc";
+  roundRect(ctx,x,cardY,cardW,cardH,12);
+  ctx.fill();
+  ctx.strokeStyle="#e2e8f0";
+  ctx.stroke();
+  drawText(ctx,c[0],x+12,cardY+8,{size:12,color:"#64748b"});
+  drawText(ctx,c[1],x+12,cardY+27,{size:15,weight:"700"});
+ });
+
+ const tableX=34, tableY=245;
+ const tableW=w-68;
+ const col=[
+  ["วันที่",0,46],
+  ["สถานะ",46,96],
+  ["เข้า",142,58],
+  ["ออกพัก",200,66],
+  ["เข้าพัก",266,66],
+  ["ออก",332,90],
+  ["ทำงาน",422,76],
+  ["ขาด",498,70],
+  ["เกิน",568,70],
+  ["สุทธิ",638,64]
+ ];
+
+ ctx.fillStyle="#0f172a";
+ roundRect(ctx,tableX,tableY,tableW,30,8);
+ ctx.fill();
+
+ col.forEach(([label,x])=>{
+  drawText(ctx,label,tableX+x+5,tableY+7,{size:10,weight:"700",color:"#fff"});
+ });
+
+ let y=tableY+34;
+ const rowH=24;
+ rows.slice(0,31).forEach((r,idx)=>{
+  if(idx%2===0){
+   ctx.fillStyle="#f8fafc";
+   ctx.fillRect(tableX,y-2,tableW,rowH);
+  }
+  const values=r.__continuation?[
+   String(r.work_date||"").slice(8,10),
+   `ต่อจาก ${r.__from_label}`,
+   "-",
+   "-",
+   "-",
+   timeOnlyTH(r.__out_at||r.last_out_at),
+   "0",
+   "0",
+   "0",
+   "0"
+  ]:[
+   String(r.work_date||"").slice(8,10),
+   r.__cross_midnight?"ข้ามวัน":statusThai(r.work_status||r.schedule_status),
+   eventTimeShort(r.first_in_at),
+   eventTimeShort(r.break_out_at),
+   eventTimeShort(r.break_in_at),
+   r.__cross_midnight
+    ? `${shortDateFromDateKey(dateKeyTHFromIso(r.last_out_at))} ${timeOnlyTH(r.last_out_at)}`
+    : eventTimeShort(r.last_out_at),
+   hours(r.paid_work_hours||0),
+   hours(r.short_hours||0),
+   hours(r.over_hours||0),
+   hours(r.net_hours||0)
+  ];
+  values.forEach((v,i)=>{
+   drawText(ctx,v,tableX+col[i][1]+5,y+2,{size:9.5,color:"#111827"});
+  });
+  y+=rowH;
+ });
+
+ drawLine(ctx,40,h-60,w-40,h-60);
+ drawText(ctx,`สร้างเมื่อ ${new Date().toLocaleString("th-TH",{timeZone:"Asia/Bangkok"})}`,40,h-45,{size:11,color:"#64748b"});
+ return canvas;
+}
+
+function drawOrgMonthlyA4(report,month){
+ const {canvas,ctx,w,h}=a4Canvas("landscape",2);
+ const rows=report.rows||[];
+
+ drawText(ctx,"Kitty Attendance",40,30,{size:18,weight:"700",color:"#0f172a"});
+ drawText(ctx,"รายงานรายเดือนทั้งองค์กร",40,58,{size:30,weight:"800"});
+ drawText(ctx,`เดือน ${month}`,40,100,{size:16,color:"#64748b"});
+
+ const summary=report.summary||{};
+ const cards=[
+  ["พนักงาน",summary.employee_count||rows.length],
+  ["วันทำงานรวม",summary.work_days||0],
+  ["ชั่วโมงทำงานรวม",hours(summary.paid_work_hours||0)],
+  ["ขาดรวม",hours(summary.short_hours||0)],
+  ["เกินรวม",hours(summary.over_hours||0)]
+ ];
+
+ const cardY=132,gap=10,cardW=(w-80-gap*4)/5;
+ cards.forEach((c,i)=>{
+  const x=40+i*(cardW+gap);
+  ctx.fillStyle="#f8fafc";
+  roundRect(ctx,x,cardY,cardW,54,12);
+  ctx.fill();
+  ctx.strokeStyle="#e2e8f0";
+  ctx.stroke();
+  drawText(ctx,c[0],x+12,cardY+8,{size:12,color:"#64748b"});
+  drawText(ctx,c[1],x+12,cardY+27,{size:15,weight:"700"});
+ });
+
+ const tableX=40, tableY=214, tableW=w-80;
+ const col=[
+  ["รหัส",0,70],
+  ["ชื่อ",70,160],
+  ["ประเภท",230,105],
+  ["วัน",335,55],
+  ["ชั่วโมง",390,120],
+  ["ขาด",510,110],
+  ["เกิน",620,110],
+  ["สุทธิ",730,110]
+ ];
+
+ ctx.fillStyle="#0f172a";
+ roundRect(ctx,tableX,tableY,tableW,30,8);
+ ctx.fill();
+
+ col.forEach(([label,x])=>{
+  drawText(ctx,label,tableX+x+6,tableY+7,{size:12,weight:"700",color:"#fff"});
+ });
+
+ let y=tableY+35;
+ const rowH=Math.max(16,Math.min(24,Math.floor((h-y-55)/Math.max(rows.length,1))));
+ const fontSize=rowH<=17?9:11;
+
+ rows.forEach((r,idx)=>{
+  if(y+rowH>h-60)return;
+  if(idx%2===0){
+   ctx.fillStyle="#f8fafc";
+   ctx.fillRect(tableX,y-2,tableW,rowH);
+  }
+  const values=[
+   r.employee_code,
+   r.name,
+   r.attendance_mode||"",
+   r.work_days||0,
+   hours(r.paid_work_hours||0),
+   hours(r.short_hours||0),
+   hours(r.over_hours||0),
+   hours(r.net_hours||0)
+  ];
+  values.forEach((v,i)=>{
+   drawText(ctx,v,tableX+col[i][1]+6,y+2,{size:fontSize,color:"#111827"});
+  });
+  y+=rowH;
+ });
+
+ drawLine(ctx,40,h-45,w-40,h-45);
+ drawText(ctx,`สร้างเมื่อ ${new Date().toLocaleString("th-TH",{timeZone:"Asia/Bangkok"})}`,40,h-32,{size:10,color:"#64748b"});
+ return canvas;
+}
+
+async function previewMonthlyDailyA4Image(){
+ const month=document.getElementById("monthlySummaryMonth").value;
+ const employeeId=document.getElementById("a4ReportEmployee").value||null;
+ const result=document.getElementById("monthlySummaryResult");
+ try{
+  result.innerHTML='<div class="status">กำลังสร้าง Preview รายวัน…</div>';
+  const r=await api("admin_a4_employee_daily_report",{month,employeeId});
+  const reports=r.reports||[];
+  if(!reports.length){result.innerHTML='<div class="status">ไม่พบข้อมูลสำหรับสร้าง Preview</div>';return;}
+  const rep=reports[0];
+  const filename=safeFileName(`daily_${month}_${rep.employee.employee_code}_${rep.employee.name}.png`);
+  showA4Preview(drawEmployeeDailyA4(rep,month),filename,employeeId?`Preview: ${esc(rep.employee.employee_code)} - ${esc(rep.employee.name)}`:`Preview คนแรกจากทั้งหมด ${reports.length} คน หากต้องการดูคนอื่นให้เลือกชื่อพนักงานก่อน`);
+  result.innerHTML='<div class="status ok">สร้าง Preview แล้ว</div>';
+ }catch(e){result.innerHTML=`<div class="status err">${esc(errText(e))}</div>`;}
+}
+
+async function previewOrgMonthlyA4Image(){
+ const month=document.getElementById("monthlySummaryMonth").value;
+ const result=document.getElementById("monthlySummaryResult");
+ try{
+  result.innerHTML='<div class="status">กำลังสร้าง Preview รายเดือนองค์กร…</div>';
+  const r=await api("admin_a4_org_monthly_report",{month});
+  const filename=safeFileName(`organization_monthly_${month}.png`);
+  showA4Preview(drawOrgMonthlyA4(r,month),filename,"Preview รายเดือนองค์กร");
+  result.innerHTML='<div class="status ok">สร้าง Preview แล้ว</div>';
+ }catch(e){result.innerHTML=`<div class="status err">${esc(errText(e))}</div>`;}
+}
+
+async function downloadMonthlyDailyA4Images(){
+ const month=document.getElementById("monthlySummaryMonth").value;
+ const employeeId=document.getElementById("a4ReportEmployee").value||null;
+ const result=document.getElementById("monthlySummaryResult");
+ try{
+  result.innerHTML='<div class="status">กำลังสร้างรูปภาพรายงานรายวัน…</div>';
+  const r=await api("admin_a4_employee_daily_report",{month,employeeId});
+  const reports=r.reports||[];
+  if(!reports.length){result.innerHTML='<div class="status">ไม่พบข้อมูลสำหรับสร้างรายงาน</div>';return;}
+
+  let downloaded=0;
+  for(const rep of reports){
+   const filename=safeFileName(`daily_${month}_${rep.employee.employee_code}_${rep.employee.name}.png`);
+   const ok=downloadCanvasPng(drawEmployeeDailyA4(rep,month),filename);
+   if(ok)downloaded++;
+   if(isLineWebView())break;
+   await new Promise(res=>setTimeout(res,250));
+  }
+
+  result.innerHTML=isLineWebView()
+   ? '<div class="status ok">LINE เปิด Preview ให้แล้ว หากเลือกทุกคน ระบบจะแสดงไฟล์แรกก่อน แนะนำเปิดผ่าน Safari เพื่อดาวน์โหลดหลายไฟล์</div>'
+   : `<div class="status ok">ดาวน์โหลดรายงานรายวัน ${downloaded} ไฟล์แล้ว</div>`;
+ }catch(e){result.innerHTML=`<div class="status err">${esc(errText(e))}</div>`;}
+}
+
+async function downloadOrgMonthlyA4Image(){
+ const month=document.getElementById("monthlySummaryMonth").value;
+ const result=document.getElementById("monthlySummaryResult");
+ try{
+  result.innerHTML='<div class="status">กำลังสร้างรูปภาพรายงานรายเดือนองค์กร…</div>';
+  const r=await api("admin_a4_org_monthly_report",{month});
+  const filename=safeFileName(`organization_monthly_${month}.png`);
+  const ok=downloadCanvasPng(drawOrgMonthlyA4(r,month),filename);
+  result.innerHTML=ok?'<div class="status ok">ดาวน์โหลดรายงานรายเดือนองค์กรแล้ว</div>':'<div class="status ok">LINE เปิด Preview ให้แล้ว กดค้างที่รูปเพื่อบันทึก</div>';
+ }catch(e){result.innerHTML=`<div class="status err">${esc(errText(e))}</div>`;}
+}
+
+async function loadMonthlySummary(){
+ const month=document.getElementById("monthlySummaryMonth").value;
+ const box=document.getElementById("monthlySummaryResult");
+ try{
+  box.innerHTML='<div class="status">กำลังโหลด…</div>';
+  const r=await api("admin_monthly_summary",{month});
+  const rows=r.rows||[];
+  box.innerHTML=rows.length?`<table class="table">
+   <thead><tr>
+    <th>พนักงาน</th><th>วันทำงาน</th><th>ชั่วโมงทำงาน</th>
+    <th>ขาด</th><th>เกิน</th><th>ชดเชย</th><th>สุทธิ</th>
+   </tr></thead>
+   <tbody>${rows.map(x=>`<tr>
+    <td>${esc(x.employee_code)}<br>${esc(x.name)}</td>
+    <td>${x.work_days}</td>
+    <td>${hours(x.paid_work_hours)}</td>
+    <td>${hours(x.short_hours)}</td>
+    <td>${hours(x.over_hours)}</td>
+    <td>${hours(x.makeup_hours)}</td>
+    <td>${hours(x.net_hours)}</td>
+   </tr>`).join("")}</tbody></table>`:'<div class="status">ไม่พบข้อมูล</div>';
+ }catch(e){box.innerHTML=`<div class="status err">${esc(errText(e))}</div>`}
+}
+
+
+async function adminCreateEmployee(){
+ const result=document.getElementById("employeeCreateResult");
+ try{
+  const payload={
+   employeeCode:document.getElementById("newEmployeeCode").value.trim(),
+   name:document.getElementById("newEmployeeName").value.trim(),
+   lineUserId:document.getElementById("newEmployeeLineId").value.trim(),
+   attendanceMode:document.getElementById("newEmployeeMode").value,
+   assignedOfficeId:document.getElementById("newEmployeeOffice").value||null,
+   position:document.getElementById("newEmployeePosition").value.trim(),
+   department:document.getElementById("newEmployeeDepartment").value.trim()
+  };
+  const r=await api("admin_create_employee",payload);
+  result.innerHTML=`<div class="status ok">เพิ่ม ${esc(r.employee.employee_code)} - ${esc(r.employee.name)} สำเร็จ</div>`;
+  await loadAdminBootstrap();
+ }catch(e){
+  result.innerHTML=`<div class="status err">${esc(errText(e))}</div>`;
+ }
+}
+
+async function previewLineReport() {
+  const box = document.getElementById("reportPreview");
+  box.textContent = "กำลังสร้างรายงาน…";
+
+  try {
+    const r = await api("admin_report_preview", {
+      date: document.getElementById("reportDate").value,
+      reportType: document.getElementById("reportType").value
     });
 
-    async function initLiff() {
-      try {
-        setInteractive(false);
-        showStatus('กำลังเริ่ม LIFF...', '');
+    box.textContent = r.message || "สร้างรายงานแล้ว แต่ข้อความว่าง";
+  } catch (e) {
+    box.textContent = "สร้างรายงานไม่สำเร็จ:\\n" + errText(e);
+  }
+}
+
+async function sendLineReport() {
+  const box = document.getElementById("reportPreview");
+  const reportType = document.getElementById("reportType").value;
+  const label = reportType === "MIDDAY"
+    ? "รายงาน 13:00"
+    : "รายงาน 22:00";
+
+  if (!confirm(`ยืนยันส่ง ${label}`)) return;
+
+  box.textContent = `กำลังส่ง ${label}…`;
+
+  try {
+    const r = await api("admin_report_send", {
+      date: document.getElementById("reportDate").value,
+      reportType
+    });
+
+    box.textContent = r.message || "ส่งสำเร็จ";
+    alert(`ส่ง ${label} แล้ว`);
+  } catch (e) {
+    box.textContent = `ส่ง ${label} ไม่สำเร็จ:\\n` + errText(e);
+    alert(`ส่ง ${label} ไม่สำเร็จ: ${errText(e)}`);
+  }
+}
+
+
+function toBangkokLocalInput(value){
+ if(!value)return "";
+ const d=new Date(value);
+ const parts=new Intl.DateTimeFormat("en-CA",{
+  timeZone:"Asia/Bangkok",year:"numeric",month:"2-digit",day:"2-digit",
+  hour:"2-digit",minute:"2-digit",hour12:false
+ }).formatToParts(d);
+ const v=Object.fromEntries(parts.map(p=>[p.type,p.value]));
+ return `${v.year}-${v.month}-${v.day}T${v.hour}:${v.minute}`;
+}
+function bangkokLocalToIso(value){
+ if(!value)throw new Error("กรุณากรอกวันและเวลา");
+ return new Date(`${value}:00+07:00`).toISOString();
+}
+
+function geo(){
+ return new Promise((ok,no)=>{
+  if(!navigator.geolocation){
+   no(new Error("อุปกรณ์นี้ไม่รองรับ GPS"));
+   return;
+  }
+
+  let done=false;
+  const timer=setTimeout(()=>{
+   if(done)return;
+   done=true;
+   no(new Error("GPS ใช้เวลานานเกินไป กรุณาปิดเปิด LIFF หรือเปิด Location แล้วลองใหม่"));
+  },15000);
+
+  navigator.geolocation.getCurrentPosition(
+   pos=>{
+    if(done)return;
+    done=true;
+    clearTimeout(timer);
+    ok(pos);
+   },
+   err=>{
+    if(done)return;
+    done=true;
+    clearTimeout(timer);
+    no(new Error("ไม่สามารถอ่าน GPS ได้ กรุณาอนุญาต Location แล้วลองใหม่"));
+   },
+   {enableHighAccuracy:true,timeout:12000,maximumAge:0}
+  );
+ });
+}
+function setStatus(m,t=""){const e=document.getElementById("appStatus");e.textContent=m;e.className="status "+t}
+function bkkDate(){return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Bangkok",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())}
+function thaiDate(v){if(!v)return"—";return new Intl.DateTimeFormat("th-TH",{day:"numeric",month:"short",year:"numeric"}).format(new Date(v+"T00:00:00+07:00"))}
+function timeTH(v){if(!v)return"—";return new Intl.DateTimeFormat("th-TH",{timeZone:"Asia/Bangkok",hour:"2-digit",minute:"2-digit"}).format(new Date(v))}
+function hours(v){const n=Number(v);if(!Number.isFinite(n))return"—";const m=Math.round(Math.abs(n)*60),h=Math.floor(m/60),r=m%60,p=n<0?"-":"";return h?(r?`${p}${h} ชม. ${r} นาที`:`${p}${h} ชม.`):`${p}${r} นาที`}
+function cap(x){return x[0].toUpperCase()+x.slice(1)}
+function esc(x){return String(x??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
+function errText(e){const x=String(e?.message||e);return({MISSING_LINE_TOKEN:"ไม่พบ LINE Token",INVALID_LINE_TOKEN:"LINE Token ไม่ถูกต้อง",EMPLOYEE_NOT_REGISTERED:"ไม่พบข้อมูลพนักงาน",ADMIN_REQUIRED:"ไม่มีสิทธิ์แอดมิน",REASON_REQUIRED:"ต้องกรอกเหตุผล",LINE_CHANNEL_TOKEN_MISSING:"ยังไม่ได้ตั้ง LINE_CHANNEL_ACCESS_TOKEN"}[x]||x)}
+</script>
+
+
+<script>
+window.adminSetEmployeeActive = async function(active){
+  if (typeof window.setEmployeeActiveStatus === "function") {
+    return window.setEmployeeActiveStatus(active);
+  }
+
+  var employeeId = "";
+  var selectIds = ["statusEmployeeSelect","employeeStatusSelect","adminEmployeeStatusSelect","inactiveEmployeeSelect"];
+  for (var i=0;i<selectIds.length;i++){
+    var el=document.getElementById(selectIds[i]);
+    if(el && el.value){ employeeId=el.value; break; }
+  }
+
+  if(!employeeId){
+    alert("กรุณาเลือกพนักงาน");
+    return;
+  }
+
+  var reason = prompt(active ? "เหตุผลในการเปิดใช้งาน" : "เหตุผลในการปิดใช้งาน / Inactive");
+  if(!reason)return;
+
+  try{
+    await api("admin_set_employee_active",{employeeId:employeeId,active:!!active,reason:reason});
+    alert(active ? "เปิดใช้งานพนักงานแล้ว" : "ปิดใช้งานพนักงานแล้ว");
+    if(typeof loadAdminBootstrap === "function") await loadAdminBootstrap();
+  }catch(e){
+    alert((typeof errText==="function") ? errText(e) : (e && e.message ? e.message : String(e)));
+  }
+};
+
+window.adminSetEmplyeeActive = window.adminSetEmployeeActive;
+</script>
 
-        if (typeof liff === 'undefined') {
-          throw new Error('LIFF SDK ไม่โหลด กรุณาตรวจสอบ Internet และเปิดผ่าน LINE อีกครั้ง');
-        }
-        if (!LIFF_ID) throw new Error('ยังไม่ได้ตั้งค่า LIFF ID');
-        if (!GAS_WEB_APP_URL) throw new Error('ยังไม่ได้ตั้งค่า Apps Script Web App URL');
-
-        await liff.init({ liffId: LIFF_ID });
-
-        if (!liff.isInClient()) {
-          throw new Error(
-            'กรุณาเปิดลิงก์ผ่าน LINE app บนมือถือเท่านั้น\n' +
-            'ระบบไม่อนุญาต Browser, Notebook หรือ LINE Desktop'
-          );
-        }
-
-        const userAgent = navigator.userAgent || '';
-        const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
-        const isDesktopLike =
-          /Windows NT|Macintosh|X11|Linux x86_64/i.test(userAgent) &&
-          !/Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
-
-        if (!isMobileDevice || isDesktopLike) {
-          throw new Error('ระบบอนุญาตให้ลงเวลาผ่านมือถือหรือแท็บเล็ตเท่านั้น');
-        }
-
-        isLiffReady = true;
-
-        if (!liff.isLoggedIn()) {
-          showStatus('กำลังพาไป Login LINE...', 'warning');
-          liff.login();
-          return;
-        }
-
-        const profile = await liff.getProfile();
-        clearTokenRecoveryState();
-        lineUserId = profile.userId;
-        lineDisplayName = profile.displayName;
-
-        document.getElementById('lineBox').textContent =
-          'LINE: ' + lineDisplayName;
-
-        preEnableBuiltInAdmin();
-        initializeAdminMode();
-        await refreshPageState(false);
-        showStatus('พร้อมใช้งาน กรุณากดปุ่มตามสถานะที่แสดง', 'success');
-
-      } catch (err) {
-        if (isRevokedOrExpiredTokenError(err)) {
-          const recovered = recoverLiffSession();
-          if (recovered) return;
-        }
-
-        if (isEmployeeNotFoundError(err) && lineUserId) {
-          showUnregisteredEmployee();
-          return;
-        }
-
-        setInteractive(false);
-        document.getElementById('lineBox').textContent = 'เชื่อมต่อระบบไม่สำเร็จ';
-        document.getElementById('employeeBox').textContent =
-          'กรุณาปิดหน้านี้แล้วเปิดผ่าน LINE อีกครั้ง';
-        showStatus(getErrorMessage(err), 'error');
-      }
-    }
-
-    function isEmployeeNotFoundError(error) {
-      const message = getErrorMessage(error).toLowerCase();
-      return (
-        message.indexOf('employee not found') >= 0 ||
-        message.indexOf('not found or inactive') >= 0 ||
-        message.indexOf('ไม่พบพนักงาน') >= 0 ||
-        message.indexOf('พนักงานไม่ได้เปิดใช้งาน') >= 0
-      );
-    }
-
-    function showUnregisteredEmployee() {
-      setInteractive(false);
-      currentEmployee = null;
-      currentPageState = null;
-
-      document.getElementById('lineBox').textContent =
-        'เชื่อมต่อ LINE สำเร็จ: ' + safeValue(lineDisplayName);
-
-      const employeeBox = document.getElementById('employeeBox');
-      employeeBox.innerHTML =
-        '<div class="unregistered-card">' +
-          '<div class="unregistered-title">ยังไม่พบข้อมูลพนักงานในระบบ</div>' +
-          '<div>กรุณาส่งข้อมูลด้านล่างให้ผู้ดูแลระบบเพื่อลงทะเบียน</div>' +
-          '<div class="identity-row">' +
-            '<span class="identity-label">ชื่อ LINE</span>' +
-            '<span class="identity-value">' + escapeHtml(lineDisplayName || '-') + '</span>' +
-          '</div>' +
-          '<div class="identity-row">' +
-            '<span class="identity-label">LINE User ID</span>' +
-            '<span class="identity-value" id="newEmployeeLineUserId">' +
-              escapeHtml(lineUserId || '-') +
-            '</span>' +
-          '</div>' +
-          '<button type="button" class="copy-id-button" onclick="copyLineUserId()">' +
-            'คัดลอก LINE User ID' +
-          '</button>' +
-        '</div>';
-
-      document.getElementById('stateBox').classList.add('hidden');
-      document.getElementById('actionButtons').classList.add('hidden');
-      document.getElementById('refreshButton').classList.remove('hidden');
-      document.getElementById('todaySection').classList.add('hidden');
-      document.getElementById('monthlySection').classList.add('hidden');
-
-      showStatus(
-        'ยังไม่สามารถลงเวลาได้จนกว่าผู้ดูแลระบบจะเพิ่มพนักงานและเปิดใช้งานบัญชี',
-        'warning'
-      );
-    }
-
-    async function copyLineUserId() {
-      if (!lineUserId) return;
-      try {
-        await navigator.clipboard.writeText(lineUserId);
-        showStatus('คัดลอก LINE User ID แล้ว', 'success');
-      } catch (error) {
-        const input = document.createElement('textarea');
-        input.value = lineUserId;
-        input.setAttribute('readonly', '');
-        input.style.position = 'fixed';
-        input.style.opacity = '0';
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand('copy');
-        document.body.removeChild(input);
-        showStatus('คัดลอก LINE User ID แล้ว', 'success');
-      }
-    }
-
-    function escapeHtml(value) {
-      return String(value == null ? '' : value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    function isRevokedOrExpiredTokenError(error) {
-      const message = getErrorMessage(error).toLowerCase();
-      return (
-        message.indexOf('access token revoked') >= 0 ||
-        message.indexOf('token revoked') >= 0 ||
-        message.indexOf('invalid access token') >= 0 ||
-        message.indexOf('access token expired') >= 0 ||
-        message.indexOf('token expired') >= 0 ||
-        message.indexOf('401') >= 0
-      );
-    }
-
-    function recoverLiffSession() {
-      const now = Date.now();
-      const lastAttempt = Number(sessionStorage.getItem(TOKEN_RECOVERY_KEY) || 0);
-
-      // Prevent endless logout/login loops if LINE keeps returning the same error.
-      if (lastAttempt && now - lastAttempt < TOKEN_RECOVERY_WINDOW_MS) {
-        setInteractive(false);
-        document.getElementById('lineBox').textContent = 'LINE Login หมดอายุ';
-        document.getElementById('employeeBox').textContent =
-          'กรุณาปิดหน้านี้ แล้วเปิดระบบใหม่จาก Rich Menu ใน LINE';
-        showStatus(
-          'ไม่สามารถสร้าง LINE Login ใหม่ได้อัตโนมัติ\n' +
-          'กรุณาปิดหน้านี้ แล้วเปิดระบบใหม่จาก LINE อีกครั้ง',
-          'error'
-        );
-        return false;
-      }
-
-      sessionStorage.setItem(TOKEN_RECOVERY_KEY, String(now));
-      setInteractive(false);
-      document.getElementById('lineBox').textContent = 'กำลังเชื่อมต่อ LINE ใหม่...';
-      document.getElementById('employeeBox').textContent =
-        'ไม่ต้องปิดหน้า ระบบกำลัง Login ใหม่ให้อัตโนมัติ';
-      showStatus('LINE Login หมดอายุ กำลังเชื่อมต่อใหม่...', 'warning');
-
-      try {
-        if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
-          liff.logout();
-        }
-      } catch (logoutError) {
-        console.warn('LIFF logout failed', logoutError);
-      }
-
-      window.setTimeout(function () {
-        try {
-          liff.login({ redirectUri: getCleanRedirectUri() });
-        } catch (loginError) {
-          console.error('LIFF login recovery failed', loginError);
-          window.location.replace(getCleanRedirectUri());
-        }
-      }, 300);
-
-      return true;
-    }
-
-    function clearTokenRecoveryState() {
-      try {
-        sessionStorage.removeItem(TOKEN_RECOVERY_KEY);
-      } catch (error) {
-        console.warn('Cannot clear token recovery state', error);
-      }
-    }
-
-    function getCleanRedirectUri() {
-      const url = new URL(window.location.href);
-      [
-        'code',
-        'state',
-        'liff.state',
-        'liffClientId',
-        'liffRedirectUri',
-        'error',
-        'error_description'
-      ].forEach(function (key) {
-        url.searchParams.delete(key);
-      });
-      url.hash = '';
-      return url.toString();
-    }
-
-    async function refreshPageState(showLoading) {
-      if (!lineUserId) return null;
-
-      if (showLoading) {
-        showStatus('กำลังรีเฟรชสถานะ...', '');
-      }
-
-      const result = await jsonpRequest(GAS_WEB_APP_URL, {
-        action: 'getAttendancePageState',
-        lineUserId: lineUserId
-      });
-
-      if (!result || result.success !== true) {
-        throw new Error(getServerMessage(result));
-      }
-
-      currentPageState = result;
-      currentEmployee = result.employee;
-      renderPageState(result);
-      renderTodayTimeline(result.events || []);
-      await loadMonthlyHistory(selectedHistoryMonth, false);
-
-      if (showLoading) {
-        showStatus('อัปเดตสถานะล่าสุดแล้ว', 'success');
-      }
-
-      return result;
-    }
-
-    function renderPageState(pageState) {
-      const employee = pageState.employee || {};
-      const mode = employee.attendanceMode === 'MULTI_BRANCH'
-        ? 'BA / หลายสาขา'
-        : 'พนักงานทั่วไป';
-      const scheduleText = pageState.isWfh
-        ? 'ทำงานจากที่บ้าน (WFH)'
-        : (pageState.isLeave
-          ? (pageState.leaveLabel || pageState.scheduleStatus)
-          : (pageState.scheduleStatus || 'WORK'));
-
-      document.getElementById('employeeBox').textContent =
-        'ชื่อ: ' + safeValue(employee.name) + '\n' +
-        'รหัส: ' + safeValue(employee.userId) + '\n' +
-        'รูปแบบ: ' + mode + '\n' +
-        'ตารางวันนี้: ' + scheduleText;
-
-      const state = pageState.state || {};
-      let stateText =
-        'สถานะ: ' + safeValue(STATE_LABELS[state.currentState] || state.currentState);
-
-      if (employee.attendanceMode === 'MULTI_BRANCH') {
-        stateText += '\nจำนวนสาขาที่เข้า: ' + safeValue(state.visitCount || 0);
-        if (state.openBranch && state.openBranch.actualOffice) {
-          stateText += '\nสาขาปัจจุบัน: ' + state.openBranch.actualOffice;
-        }
-      }
-
-      document.getElementById('stateBox').textContent = stateText;
-      document.getElementById('stateBox').classList.remove('hidden');
-      document.getElementById('refreshButton').classList.remove('hidden');
-
-      renderActionButtons(pageState.allowedActions || []);
-
-      if (pageState.isWfh) {
-        showStatus(
-          '🏠 วันนี้ทำงานจากที่บ้าน (WFH)\nระบบนับเวลาทำงานให้ครบ 9 ชั่วโมงแล้ว ไม่ต้องลงเวลา',
-          'success'
-        );
-      } else if (pageState.isLeave) {
-        showStatus(
-          'วันนี้ถูกบันทึกเป็น' + safeValue(pageState.leaveLabel) +
-          '\nหากต้องการลงเวลา กรุณาติดต่อ HR ให้แก้ตารางก่อน',
-          'warning'
-        );
-      } else if (!(pageState.allowedActions || []).length) {
-        showStatus('วันนี้ลงเวลาครบแล้ว', 'success');
-      }
-    }
-
-    function renderActionButtons(allowedActions) {
-      const container = document.getElementById('actionButtons');
-      container.innerHTML = '';
-
-      allowedActions.forEach(function (type) {
-        const config = ACTIONS[type];
-        if (!config) return;
-
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = config.className;
-        button.textContent = config.label;
-        button.disabled = isSubmitting;
-        button.addEventListener('click', function () {
-          sendAttendance(type);
-        });
-        container.appendChild(button);
-      });
-
-      container.classList.toggle('hidden', container.children.length === 0);
-    }
-
-    function sendAttendance(type) {
-      if (!isLiffReady || !lineUserId || isSubmitting) return;
-
-      const allowed = currentPageState && currentPageState.allowedActions
-        ? currentPageState.allowedActions
-        : [];
-
-      if (allowed.indexOf(type) < 0) {
-        showStatus('สถานะเปลี่ยนแล้ว กรุณากดรีเฟรชก่อนลงเวลา', 'warning');
-        return;
-      }
-
-      if (!navigator.geolocation) {
-        showStatus('อุปกรณ์นี้ไม่รองรับ GPS', 'error');
-        return;
-      }
-
-      isSubmitting = true;
-      setInteractive(false);
-      showStatus('กำลังอ่านตำแหน่ง GPS...', '');
-
-      const beforeEventCount =
-        currentPageState && currentPageState.events
-          ? currentPageState.events.length
-          : 0;
-
-      navigator.geolocation.getCurrentPosition(
-        async function (position) {
-          try {
-            showStatus('กำลังบันทึกเวลา...', '');
-
-            const response = await jsonpRequest(GAS_WEB_APP_URL, {
-              action: 'submitAttendance',
-              lineUserId: lineUserId,
-              type: type,
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              gpsAccuracy: position.coords.accuracy
-            });
-
-            if (!response || response.success !== true) {
-              const recovered = await recoverAttendanceResult(type, beforeEventCount);
-              if (recovered) {
-                showSuccessMessage(recovered);
-                await refreshPageState(false);
-                return;
-              }
-              throw new Error(getServerMessage(response));
-            }
-
-            showSuccessMessage(response);
-
-            // Change the available buttons immediately from the server response
-            // so a second tap cannot repeat the same event while the sheet refreshes.
-            if (Array.isArray(response.allowedActions)) {
-              currentPageState = currentPageState || {};
-              currentPageState.allowedActions = response.allowedActions;
-              renderActionButtons(response.allowedActions);
-            } else {
-              renderActionButtons([]);
-            }
-
-            await refreshPageState(false);
-
-          } catch (err) {
-            try {
-              const recovered = await recoverAttendanceResult(type, beforeEventCount);
-              if (recovered) {
-                showSuccessMessage(recovered);
-                await refreshPageState(false);
-                return;
-              }
-            } catch (recoveryError) {
-              console.error('Attendance recovery failed', recoveryError);
-            }
-
-            showStatus(
-              'ไม่สามารถยืนยันผลการบันทึกได้\n' + getErrorMessage(err),
-              'error'
-            );
-
-          } finally {
-            isSubmitting = false;
-            setInteractive(true);
-          }
-        },
-        function (error) {
-          isSubmitting = false;
-          setInteractive(true);
-
-          let message = 'ไม่สามารถอ่าน GPS ได้\n';
-          if (error.code === 1) {
-            message += 'กรุณาอนุญาตให้ LINE เข้าถึง Location';
-          } else if (error.code === 2) {
-            message += 'ไม่สามารถระบุตำแหน่งได้ กรุณาเปิด GPS';
-          } else if (error.code === 3) {
-            message += 'GPS ใช้เวลานานเกินกำหนด กรุณาลองใหม่';
-          } else {
-            message += safeValue(error.message);
-          }
-          showStatus(message, 'error');
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 5000
-        }
-      );
-    }
-
-    async function recoverAttendanceResult(type, beforeEventCount) {
-      const pageState = await refreshPageState(false);
-      const events = pageState && pageState.events ? pageState.events : [];
-      const lastEvent = events.length ? events[events.length - 1] : null;
-
-      if (
-        events.length <= beforeEventCount ||
-        !lastEvent ||
-        lastEvent.type !== type
-      ) {
-        return null;
-      }
-
-      if (type === 'OUT' || type === 'DAY_OUT') {
-        const status = await jsonpRequest(GAS_WEB_APP_URL, {
-          action: 'getTodayAttendanceStatus',
-          lineUserId: lineUserId
-        });
-        if (status && status.success === true) {
-          status.type = type;
-          status.recoveredAfterUncertainResponse = true;
-          return status;
-        }
-      }
-
-      return {
-        success: true,
-        recoveredAfterUncertainResponse: true,
-        type: type,
-        date: pageState.date,
-        time: lastEvent.time,
-        name: pageState.employee.name,
-        userId: pageState.employee.userId,
-        actualOffice: lastEvent.office,
-        distanceMeter: lastEvent.distanceMeter,
-        gpsAccuracy: lastEvent.gpsAccuracy,
-        gpsStatus: lastEvent.gpsStatus,
-        message: 'ตรวจสอบแล้วว่ารายการได้รับการบันทึก'
-      };
-    }
-
-    function showSuccessMessage(response) {
-      const type = response.type || '';
-      const isTerminal =
-        type === 'OUT' ||
-        type === 'DAY_OUT' ||
-        response.hasOut === true ||
-        response.hasDayOut === true;
-
-      let message = response.recoveredAfterUncertainResponse
-        ? '✅ ตรวจสอบแล้วว่าบันทึกสำเร็จ\n'
-        : '✅ บันทึกสำเร็จ\n';
-
-      message += 'ชื่อ: ' + safeValue(response.name) + '\n';
-      message += 'วันที่: ' + safeValue(response.date) + '\n';
-
-      if (isTerminal) {
-        message += '\n🕒 ข้อมูลวันนี้\n';
-        message += 'เริ่มงาน: ' + safeValue(response.checkInTime) + '\n';
-
-        if (
-          response.requireBreakClock === true ||
-          response.requireBreakClock === 'TRUE'
-        ) {
-          message += 'ออกพัก: ' + safeValue(response.breakOutTime) + '\n';
-          message += 'กลับจากพัก: ' + safeValue(response.breakInTime) + '\n';
-        }
-
-        message += 'เลิกงาน: ' + safeValue(response.checkOutTime || response.time) + '\n';
-        message += '\n📊 สรุปเวลาทำงาน\n';
-        message += 'เวลาอยู่ในงานทั้งหมด: ' +
-          displayHourMinute(response.grossHoursDisplay, response.grossHours) + '\n';
-
-        if (
-          response.requireBreakClock === true ||
-          response.requireBreakClock === 'TRUE'
-        ) {
-          message += 'เวลาพักจริง: ' +
-            displayHourMinute(response.breakHoursDisplay, response.breakHours) + '\n';
-          message += 'พักเกินที่ถูกหัก: ' +
-            displayHourMinute(
-              response.excessBreakHoursDisplay,
-              response.excessBreakHours
-            ) + '\n';
-        }
-
-        message += 'ชั่วโมงทำงานที่นับให้: ' +
-          displayHourMinute(response.workHoursDisplay, response.workHours) + '\n';
-        message += 'ขาด: ' +
-          displayHourMinute(
-            response.roundedShortHoursDisplay,
-            response.roundedShortHours
-          ) + '\n';
-        message += 'เกิน: ' +
-          displayHourMinute(
-            response.roundedOverHoursDisplay,
-            response.roundedOverHours
-          ) + '\n';
-        message += 'ส่วนต่าง: ' +
-          displayHourMinute(
-            response.netDifferenceHoursDisplay,
-            response.netDifferenceHours
-          ) + '\n';
-        message += 'สถานะ: ' + safeValue(response.workStatus);
-      } else {
-        message += 'รายการ: ' + actionLabel(type) + '\n';
-        message += 'เวลา: ' + safeValue(response.time) + '\n';
-        message += 'สาขาที่ตรวจพบ: ' + safeValue(response.actualOffice) + '\n';
-        message += 'ระยะห่าง: ' + safeValue(response.distanceMeter) + ' เมตร\n';
-        message += 'ความแม่นยำ GPS: ' + safeValue(response.gpsAccuracy) + ' เมตร\n';
-      }
-
-      showStatus(message, 'success');
-    }
-
-    function jsonpRequest(url, params) {
-      return new Promise(function (resolve, reject) {
-        const callbackName =
-          'jsonpCallback_' +
-          Date.now() +
-          '_' +
-          Math.floor(Math.random() * 100000);
-
-        const queryParams = Object.assign({}, params, {
-          callback: callbackName
-        });
-
-        const query = Object.keys(queryParams)
-          .map(function (key) {
-            return (
-              encodeURIComponent(key) +
-              '=' +
-              encodeURIComponent(queryParams[key])
-            );
-          })
-          .join('&');
-
-        const script = document.createElement('script');
-        script.src = url + '?' + query;
-
-        const timeout = setTimeout(function () {
-          cleanup();
-          reject(new Error('ระบบใช้เวลาประมวลผลเกิน 25 วินาที'));
-        }, 25000);
-
-        window[callbackName] = function (data) {
-          clearTimeout(timeout);
-          cleanup();
-          resolve(data);
-        };
-
-        script.onerror = function () {
-          clearTimeout(timeout);
-          cleanup();
-          reject(new Error('เชื่อมต่อ Apps Script ไม่สำเร็จ'));
-        };
-
-        function cleanup() {
-          try {
-            delete window[callbackName];
-          } catch (error) {
-            window[callbackName] = undefined;
-          }
-
-          if (script.parentNode) {
-            script.parentNode.removeChild(script);
-          }
-        }
-
-        document.body.appendChild(script);
-      });
-    }
-
-    function setInteractive(enabled) {
-      // ปิดเฉพาะปุ่มลงเวลาของพนักงานระหว่างโหลดข้อมูล
-      // ห้ามปิดปุ่มสลับโหมดและปุ่มแอดมิน เพราะแอดมินต้องเข้าใช้งานได้ทันที
-      const employeeButtons = document.querySelectorAll(
-        '#actionButtons button, #refreshButton, #employeeApp button:not(#employeeModeBtn):not(#adminModeBtn)'
-      );
-      employeeButtons.forEach(function (button) {
-        button.disabled = !enabled || isSubmitting;
-      });
-
-      const modeButtons = document.querySelectorAll('#modeSwitch button');
-      modeButtons.forEach(function (button) {
-        button.disabled = false;
-      });
-
-      if (currentPageState) {
-        renderActionButtons(currentPageState.allowedActions || []);
-      }
-    }
-
-    function actionLabel(type) {
-      return ACTIONS[type] ? ACTIONS[type].label : safeValue(type);
-    }
-
-    function displayHourMinute(displayValue, rawValue) {
-      if (
-        displayValue !== undefined &&
-        displayValue !== null &&
-        displayValue !== ''
-      ) {
-        return displayValue;
-      }
-
-      if (rawValue === undefined || rawValue === null || rawValue === '') {
-        return '-';
-      }
-
-      const numberHours = Number(rawValue);
-      if (isNaN(numberHours)) return String(rawValue);
-
-      const sign = numberHours < 0 ? '-' : '';
-      const totalMinutes = Math.round(Math.abs(numberHours) * 60);
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-
-      if (hours === 0 && minutes === 0) return '0 นาที';
-      if (hours === 0) return sign + minutes + ' นาที';
-      if (minutes === 0) return sign + hours + ' ชม.';
-      return sign + hours + ' ชม. ' + minutes + ' นาที';
-    }
-
-    function getServerMessage(response) {
-      if (
-        response &&
-        response.message !== undefined &&
-        response.message !== null &&
-        String(response.message).trim()
-      ) {
-        return String(response.message).trim();
-      }
-      return 'ระบบไม่ส่งรายละเอียดข้อผิดพลาดกลับมา กรุณาติดต่อ HR';
-    }
-
-    function getErrorMessage(error) {
-      if (error && error.message && String(error.message).trim()) {
-        return String(error.message).trim();
-      }
-      if (typeof error === 'string' && error.trim()) {
-        return error.trim();
-      }
-      return 'เกิดข้อผิดพลาดในการเชื่อมต่อกับระบบ';
-    }
-
-    function safeValue(value) {
-      if (value === undefined || value === null || value === '') return '-';
-      return value;
-    }
-
-    function showStatus(message, type) {
-      const box = document.getElementById('status');
-      box.className = 'status';
-      if (type === 'success') box.classList.add('success');
-      if (type === 'error') box.classList.add('error');
-      if (type === 'warning') box.classList.add('warning');
-      box.textContent = message;
-    }
-
-
-    function getCurrentMonthKey() {
-      const now = new Date();
-      return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-    }
-
-    function formatThaiMonth(monthKey) {
-      const parts = String(monthKey || '').split('-');
-      if (parts.length !== 2) return monthKey;
-      const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-      const year = Number(parts[0]) + 543;
-      const monthIndex = Number(parts[1]) - 1;
-      return (months[monthIndex] || parts[1]) + ' ' + year;
-    }
-
-    function formatThaiDate(dateKey) {
-      const parts = String(dateKey || '').split('-');
-      if (parts.length !== 3) return safeValue(dateKey);
-      return Number(parts[2]) + '/' + Number(parts[1]) + '/' + (Number(parts[0]) + 543);
-    }
-
-    function eventLabelThai(type) {
-      const map = {
-        IN: 'เข้างาน',
-        BREAK_OUT: 'ออกพัก',
-        BREAK_IN: 'กลับจากพัก',
-        OUT: 'ออกงาน',
-        DAY_IN: 'เริ่มงานวันนี้',
-        BRANCH_IN: 'เข้าสาขา',
-        BRANCH_OUT: 'ออกจากสาขา',
-        DAY_OUT: 'เลิกงานวันนี้',
-        WORK_IN: 'เข้างาน',
-        WORK_OUT: 'ออกงาน',
-        REFILL_IN: 'เข้าเติมของ',
-        REFILL_OUT: 'ออกจากเติมของ'
-      };
-      return map[type] || actionLabel(type) || type;
-    }
-
-    function renderTodayTimeline(events) {
-      const section = document.getElementById('todaySection');
-      const container = document.getElementById('todayTimeline');
-      section.classList.remove('hidden');
-      container.innerHTML = '';
-
-      if (!events || !events.length) {
-        container.innerHTML = '<div class="empty-state">วันนี้ยังไม่มีรายการลงเวลา</div>';
-        return;
-      }
-
-      events.forEach(function (event) {
-        const item = document.createElement('div');
-        item.className = 'timeline-item';
-        const office = event.office || event.actualOffice || '';
-        item.innerHTML =
-          '<div class="timeline-row">' +
-            '<div class="timeline-label">' + escapeHtml(eventLabelThai(event.type)) + '</div>' +
-            '<div class="timeline-time">' + escapeHtml(safeValue(event.time)) + '</div>' +
-          '</div>' +
-          (office ? '<div class="small" style="margin-top:6px;">' + escapeHtml(office) + '</div>' : '');
-        container.appendChild(item);
-      });
-    }
-
-    async function loadMonthlyHistory(monthKey, forceReload) {
-      if (!lineUserId) return;
-      selectedHistoryMonth = monthKey || getCurrentMonthKey();
-      document.getElementById('monthLabel').textContent = formatThaiMonth(selectedHistoryMonth);
-      document.getElementById('nextMonthButton').disabled = selectedHistoryMonth >= getCurrentMonthKey();
-      document.getElementById('monthlySection').classList.remove('hidden');
-
-      if (!forceReload && monthlyHistoryCache[selectedHistoryMonth]) {
-        renderMonthlyHistory(monthlyHistoryCache[selectedHistoryMonth]);
-        return;
-      }
-
-      document.getElementById('monthlyHistory').innerHTML = '<div class="empty-state">กำลังโหลดข้อมูล...</div>';
-      document.getElementById('monthlySummary').innerHTML = '';
-
-      try {
-        const result = await jsonpRequest(GAS_WEB_APP_URL, {
-          action: 'getEmployeeMonthlyHistory',
-          lineUserId: lineUserId,
-          month: selectedHistoryMonth,
-          _ts: Date.now()
-        });
-        if (!result || result.success !== true) {
-          throw new Error(getServerMessage(result));
-        }
-        monthlyHistoryCache[selectedHistoryMonth] = result;
-        renderMonthlyHistory(result);
-      } catch (error) {
-        document.getElementById('monthlyHistory').innerHTML =
-          '<div class="empty-state">โหลดประวัติไม่สำเร็จ<br>' + escapeHtml(getErrorMessage(error)) + '</div>';
-      }
-    }
-
-    function changeHistoryMonth(offset) {
-      const parts = selectedHistoryMonth.split('-');
-      const date = new Date(Number(parts[0]), Number(parts[1]) - 1 + offset, 1);
-      const newKey = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
-      if (newKey > getCurrentMonthKey()) return;
-      loadMonthlyHistory(newKey, false);
-    }
-
-    function renderMonthlyHistory(result) {
-      const summary = result.summary || {};
-      const summaryItems = [
-        ['วันที่มาทำงาน', summary.presentDays || 0, 'วัน'],
-        ['วันที่หยุด', summary.offDays || 0, 'วัน'],
-        ['วันที่ลา', summary.leaveDays || 0, 'วัน'],
-        ['วันที่ขาดงาน', summary.absentDays || 0, 'วัน'],
-        ['ชั่วโมงขาด', summary.shortHoursDisplay || '0 นาที', ''],
-        ['ชั่วโมงเกิน', summary.overHoursDisplay || '0 นาที', ''],
-        ['ชั่วโมงชดเชย', summary.makeUpHoursDisplay || '0 นาที', ''],
-        ['ชั่วโมงทำงานรวม', summary.workHoursDisplay || '0 นาที', ''],
-        ['วันยังไม่ออกงาน', summary.noCheckoutDays || 0, 'วัน']
-      ];
-
-      const summaryContainer = document.getElementById('monthlySummary');
-      summaryContainer.innerHTML = '';
-      summaryItems.forEach(function (item) {
-        const box = document.createElement('div');
-        box.className = 'summary-box';
-        box.innerHTML =
-          '<div class="summary-value">' + escapeHtml(String(item[1])) + (item[2] ? ' ' + escapeHtml(item[2]) : '') + '</div>' +
-          '<div class="summary-label">' + escapeHtml(item[0]) + '</div>';
-        summaryContainer.appendChild(box);
-      });
-
-      const history = result.days || [];
-      const historyContainer = document.getElementById('monthlyHistory');
-      historyContainer.innerHTML = '';
-
-      if (!history.length) {
-        historyContainer.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลในเดือนนี้</div>';
-        return;
-      }
-
-      history.forEach(function (day) {
-        const item = document.createElement('div');
-        item.className = 'history-item';
-        item.innerHTML =
-          '<div class="history-head">' +
-            '<div class="history-date">' + escapeHtml(formatThaiDate(day.date)) + '</div>' +
-            '<div class="history-status">' + escapeHtml(day.statusThai || day.workStatus || '-') + '</div>' +
-          '</div>' +
-          '<div class="history-times">' +
-            '<div>เข้างาน: <strong>' + escapeHtml(day.inTime || '-') + '</strong></div>' +
-            '<div>ออกงาน: <strong>' + escapeHtml(day.outTime || '-') + '</strong></div>' +
-            '<div>ออกพัก: <strong>' + escapeHtml(day.breakOutTime || '-') + '</strong></div>' +
-            '<div>กลับจากพัก: <strong>' + escapeHtml(day.breakInTime || '-') + '</strong></div>' +
-          '</div>' +
-          '<div class="history-hours">' +
-            'เวลาทำงาน: <strong>' + escapeHtml(day.workHoursDisplay || '0 นาที') + '</strong><br>' +
-            (day.makeUpHoursDisplay && day.makeUpHoursDisplay !== '0 นาที'
-              ? 'ชั่วโมงชดเชย: <strong>' + escapeHtml(day.makeUpHoursDisplay) + '</strong>'
-              : 'ขาด: <strong>' + escapeHtml(day.shortHoursDisplay || '0 นาที') + '</strong> · ' +
-                'เกิน: <strong>' + escapeHtml(day.overHoursDisplay || '0 นาที') + '</strong>') +
-            (day.note ? '<br><span class="small">' + escapeHtml(day.note) + '</span>' : '') +
-          '</div>';
-        historyContainer.appendChild(item);
-      });
-    }
-
-    function escapeHtml(value) {
-      return String(value == null ? '' : value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    const BUILT_IN_ADMIN_LINE_IDS=['U0d6d8d6f2f643cd09f4ec55c43c5b9bd'];
-    let isAdminUser=false, adminEmployees=[], adminEmployeesLoaded=false, adminEmployeesLoading=null, adminDailyLoaded=false, adminDailyLoading=null, adminDailyData=null, adminPersonData=null, adminMonthlyData=null, adminEditingEvent=null, adminScheduleData=null, adminScheduleSelectedDay=null;
-    function setAdminModeVisibility(allowed){
-      const switchBox=document.getElementById('modeSwitch');
-      const adminBtn=document.getElementById('adminModeBtn');
-      isAdminUser=Boolean(allowed);
-      if(isAdminUser){
-        if(adminBtn) adminBtn.classList.remove('hidden');
-        if(switchBox) switchBox.classList.add('show');
-      }else{
-        if(adminBtn) adminBtn.classList.add('hidden');
-        if(switchBox) switchBox.classList.remove('show');
-        document.getElementById('employeeApp').classList.remove('hidden');
-        document.getElementById('adminApp').classList.add('hidden');
-      }
-    }
-    function preEnableBuiltInAdmin(){
-      const allowed=BUILT_IN_ADMIN_LINE_IDS.includes(String(lineUserId||'').trim());
-      if(allowed) setAdminModeVisibility(true);
-      return allowed;
-    }
-    async function initializeAdminMode(){
-      const preAllowed=preEnableBuiltInAdmin();
-      try{
-        const r=await jsonpRequest(GAS_WEB_APP_URL,{action:'adminBootstrap',lineUserId:lineUserId});
-        // Built-in admin must never be downgraded by a delayed/old backend response.
-        const allowed=preAllowed || Boolean(r&&r.success&&r.isAdmin===true);
-        if(r&&r.offices){ adminOffices=r.offices||[]; populateAdminOfficeSelects(); }
-        setAdminModeVisibility(allowed);
-        if(allowed){
-          const t=r.today||new Date().toISOString().slice(0,10);
-          ['adminDailyDate','adminEditDate'].forEach(id=>document.getElementById(id).value=t);
-          ['adminPersonMonth','adminMonth','adminScheduleMonth'].forEach(id=>document.getElementById(id).value=t.slice(0,7));
-        }
-      }catch(e){
-        if(!preAllowed) setAdminModeVisibility(false);
-      }
-    }
-    function switchAppMode(mode){
-      if(mode==='admin'&&!isAdminUser)return;
-      document.getElementById('employeeApp').classList.toggle('hidden',mode!=='employee');
-      document.getElementById('adminApp').classList.toggle('hidden',mode!=='admin');
-      document.getElementById('employeeModeBtn').classList.toggle('active',mode==='employee');
-      document.getElementById('adminModeBtn').classList.toggle('active',mode==='admin');
-      if(mode==='admin'){
-        // เปิดหน้าแอดมินทันที แล้วค่อยโหลดข้อมูลหนักหลัง browser วาดหน้าจอแล้ว
-        restoreAdminEmployeesCache_();
-        requestAnimationFrame(function(){
-          setTimeout(function(){
-            loadAdminEmployees().catch(function(e){showStatus(e.message||String(e),'error');});
-            loadAdminOffices().catch(function(e){console.warn(e.message||e);});
-            if(!adminDailyLoaded&&!adminDailyLoading){
-              adminDailyLoading=loadAdminDaily().finally(function(){adminDailyLoading=null;});
-            }
-          },0);
-        });
-      }
-    }
-    function showAdminTab(name,btn){document.querySelectorAll('.admin-tab').forEach(x=>x.classList.add('hidden'));document.getElementById('admin'+name.charAt(0).toUpperCase()+name.slice(1)+'Tab').classList.remove('hidden');document.querySelectorAll('#adminTabs button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');if(name==='daily'){adminDailyData=null;loadAdminDaily();}if(name==='person'&&document.getElementById('adminPersonEmployee').value){adminPersonData=null;loadAdminPerson();}if(name==='monthly'){adminMonthlyData=null;loadAdminMonthly();}if(name==='schedule'&&document.getElementById('adminScheduleEmployee').value)loadAdminScheduleCalendar();}
-    async function adminCall(action,params){const r=await jsonpRequest(GAS_WEB_APP_URL,Object.assign({action:action,lineUserId:lineUserId,_ts:Date.now()},params||{}));if(!r||r.success===false)throw new Error((r&&r.message)||'เกิดข้อผิดพลาด');return r;}
-    async function loadAdminOffices(){
-      if(adminOffices&&adminOffices.length){populateAdminOfficeSelects();return adminOffices;}
-      const r=await adminCall('adminOffices');
-      adminOffices=r.offices||[];
-      populateAdminOfficeSelects();
-      return adminOffices;
-    }
-    function populateAdminOfficeSelects(){
-      const opts=(adminOffices||[]).map(o=>'<option value="'+escapeHtml(o.officeId)+'" data-name="'+escapeHtml(o.officeName||o.officeId)+'">'+escapeHtml(o.officeId+' - '+(o.officeName||o.officeId))+'</option>').join('') || '<option value="OF001" data-name="Head Office">OF001 - Head Office</option>';
-      ['adminFormOfficeId','adminScheduleOfficeId'].forEach(id=>{const el=document.getElementById(id); if(el){ const old=el.value; el.innerHTML=opts; if(old) el.value=old; }});
-      syncAdminOfficeName();
-    }
-    function syncAdminOfficeName(){
-      const sel=document.getElementById('adminFormOfficeId');
-      const name=document.getElementById('adminFormOfficeName');
-      if(sel&&name){ const opt=sel.options[sel.selectedIndex]; name.value=(opt&&opt.dataset&&opt.dataset.name)||sel.value||''; }
-    }
-    function setAdminBtnLoading(btn,loading,label){
-      if(!btn)return;
-      if(loading){btn.dataset.oldText=btn.textContent;btn.disabled=true;btn.textContent=label||'กำลังบันทึก...';}
-      else{btn.disabled=false;if(btn.dataset.oldText)btn.textContent=btn.dataset.oldText;}
-    }
-    function applyAdminRealtimePayload(r,employeeId,date){
-      monthlyHistoryCache={};
-      if(r&&r.daily){adminDailyData=r.daily; renderAdminDailyData(r.daily);} else {adminDailyData=null;}
-      if(r&&r.person){adminPersonData=r.person; renderAdminPersonData(r.person);} else {adminPersonData=null;}
-      if(r&&r.monthly){adminMonthlyData=r.monthly; renderAdminMonthlyData(r.monthly);} else {adminMonthlyData=null;}
-      if(r&&r.calendar){adminScheduleData=r.calendar; renderAdminScheduleCalendar();}
-      if(date){document.getElementById('adminDailyDate').value=date;document.getElementById('adminEditDate').value=date;}
-      if(employeeId){['adminPersonEmployee','adminEditEmployee','adminScheduleEmployee'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=employeeId;});}
-      if(date){['adminPersonMonth','adminMonth','adminScheduleMonth'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=date.slice(0,7);});}
-    }
-    function renderAdminEmployees_(rows){
-      adminEmployees=(rows||[]).filter(x=>x.active!==false&&x.name);
-      const opts=adminEmployees.map(x=>'<option value="'+escapeHtml(x.employeeId||x.lineUserId)+'">'+escapeHtml((x.employeeId||'')+' - '+(x.name||''))+'</option>').join('');
-      const html=opts||'<option value="">ไม่พบพนักงานที่เปิดใช้งาน</option>';
-      ['adminPersonEmployee','adminEditEmployee','adminScheduleEmployee'].forEach(function(id){document.getElementById(id).innerHTML=html;});
-      adminEmployeesLoaded=adminEmployees.length>0;
-    }
-    function restoreAdminEmployeesCache_(){
-      if(adminEmployeesLoaded)return true;
-      try{
-        const raw=localStorage.getItem('attendanceAdminEmployeesV1');
-        if(!raw)return false;
-        const cached=JSON.parse(raw);
-        if(!cached||!Array.isArray(cached.rows)||Date.now()-Number(cached.savedAt||0)>1800000)return false;
-        renderAdminEmployees_(cached.rows);
-        return adminEmployeesLoaded;
-      }catch(_){return false;}
-    }
-    async function loadAdminEmployees(force){
-      if(adminEmployeesLoading)return adminEmployeesLoading;
-      if(!force&&adminEmployeesLoaded)return adminEmployees;
-      adminEmployeesLoading=(async function(){
-        const r=await adminCall('adminEmployees');
-        renderAdminEmployees_(r.rows||[]);
-        try{localStorage.setItem('attendanceAdminEmployeesV1',JSON.stringify({savedAt:Date.now(),rows:r.rows||[]}));}catch(_){}
-        if(!adminEmployees.length)throw new Error('ไม่พบพนักงานที่เปิดใช้งาน กรุณาตรวจชีท Employees และคอลัมน์ Active');
-        return adminEmployees;
-      })();
-      try{return await adminEmployeesLoading;}finally{adminEmployeesLoading=null;}
-    }
-    function adminKpi(label,value){return '<div class="admin-kpi"><b>'+escapeHtml(String(value))+'</b><span>'+escapeHtml(label)+'</span></div>';}
-    function renderAdminDailyData(r){
-      adminDailyData=r;const s=r.summary||{};
-      document.getElementById('adminDailyKpis').innerHTML=adminKpi('พนักงานทั้งหมด',s.total||0)+adminKpi('มาทำงาน',s.present||0)+adminKpi('ขาดงาน',s.absent||0)+adminKpi('ยังไม่ออกงาน',s.noCheckout||0);
-      document.getElementById('adminDailyList').innerHTML=(r.rows||[]).map(x=>'<div class="admin-row"><div class="admin-row-head"><div><div class="admin-row-name">'+escapeHtml(x.name||'-')+'</div><div class="admin-meta">'+escapeHtml(x.employeeId||'')+' · '+escapeHtml(x.scheduleStatus||'-')+' · '+escapeHtml(x.office||'-')+'</div></div><span class="history-status">'+escapeHtml(x.attendanceStatus||'-')+'</span></div><div class="admin-hours">เข้า '+escapeHtml(x.inTime||'-')+' · ออก '+escapeHtml(x.outTime||'-')+'<br>ทำงาน '+escapeHtml(x.workHours||'0 นาที')+' · ขาด '+escapeHtml(x.shortHours||'0 นาที')+' · เกิน '+escapeHtml(x.overHours||'0 นาที')+' · ชดเชย '+escapeHtml(x.makeUpHours||'0 นาที')+'</div><div class="admin-row-actions"><button class="admin-mini-btn green" onclick="quickOpenSchedule(\''+escapeHtml(x.employeeId||'')+'\',\''+escapeHtml(r.date||'')+'\',\'WFH\')">WFH</button><button class="admin-mini-btn orange" onclick="quickOpenSchedule(\''+escapeHtml(x.employeeId||'')+'\',\''+escapeHtml(r.date||'')+'\',\'BUSINESS_LEAVE\')">ลากิจ</button><button class="admin-mini-btn red" onclick="quickOpenSchedule(\''+escapeHtml(x.employeeId||'')+'\',\''+escapeHtml(r.date||'')+'\',\'SICK_LEAVE\')">ลาป่วย</button><button class="admin-mini-btn" onclick="quickOpenAttendance(\''+escapeHtml(x.employeeId||'')+'\',\''+escapeHtml(r.date||'')+'\')">แก้เวลา</button></div></div>').join('')||'<div class="admin-empty">ไม่มีข้อมูล</div>';
-    }
-    async function loadAdminDaily(){try{showStatus('กำลังโหลดข้อมูลรายวัน...','');const r=await adminCall('adminDaily',{date:document.getElementById('adminDailyDate').value});renderAdminDailyData(r);adminDailyLoaded=true;showStatus('โหลดข้อมูลแล้ว','success');}catch(e){showStatus(e.message,'error');}}
-    function renderAdminPersonData(r){
-      adminPersonData=r;const s=r.summary||{};
-      document.getElementById('adminPersonSummary').innerHTML=adminKpi('มาทำงาน',s.presentDays||0)+adminKpi('วันหยุด',s.offDays||0)+adminKpi('วันลา',s.leaveDays||0)+adminKpi('ขาดงาน',s.absentDays||0)+adminKpi('ชั่วโมงขาด',s.shortHoursDisplay||'0 นาที')+adminKpi('ชั่วโมงเกิน',s.overHoursDisplay||'0 นาที')+adminKpi('ชั่วโมงชดเชย',s.makeUpHoursDisplay||'0 นาที')+adminKpi('เวลาทำงานรวม',s.workHoursDisplay||'0 นาที');
-      document.getElementById('adminPersonList').innerHTML=(r.days||[]).map(d=>'<div class="admin-row"><div class="admin-row-head"><div class="admin-row-name">'+escapeHtml(formatThaiDate(d.date))+'</div><span class="history-status">'+escapeHtml(d.statusThai||'-')+'</span></div><div class="admin-meta">เข้า '+escapeHtml(d.inTime||'-')+' · ออก '+escapeHtml(d.outTime||'-')+' · พัก '+escapeHtml(d.breakOutTime||'-')+' / '+escapeHtml(d.breakInTime||'-')+'</div><div class="admin-hours">ทำงาน '+escapeHtml(d.workHoursDisplay||'0 นาที')+' · ขาด '+escapeHtml(d.shortHoursDisplay||'0 นาที')+' · เกิน '+escapeHtml(d.overHoursDisplay||'0 นาที')+' · ชดเชย '+escapeHtml(d.makeUpHoursDisplay||'0 นาที')+'</div></div>').join('')||'<div class="admin-empty">ไม่มีข้อมูล</div>';
-    }
-    async function loadAdminPerson(){try{const r=await adminCall('adminEmployeeMonth',{employeeUserId:document.getElementById('adminPersonEmployee').value,month:document.getElementById('adminPersonMonth').value});renderAdminPersonData(r);}catch(e){showStatus(e.message,'error');}}
-    function renderAdminMonthlyData(r){
-      adminMonthlyData=r;const hs=r.headers||[];document.getElementById('adminMonthlyHead').innerHTML='<tr>'+hs.map(h=>'<th>'+escapeHtml(h)+'</th>').join('')+'</tr>';document.getElementById('adminMonthlyBody').innerHTML=(r.rows||[]).map(o=>'<tr>'+hs.map(h=>'<td>'+escapeHtml(o[h]||'')+'</td>').join('')+'</tr>').join('');
-    }
-    async function loadAdminMonthly(){try{const r=await adminCall('adminMonthly',{month:document.getElementById('adminMonth').value});renderAdminMonthlyData(r);}catch(e){showStatus(e.message,'error');}}
-    async function quickOpenAttendance(employeeId,date){showAdminTab('edit',document.querySelector('#adminTabs button:nth-child(4)'));document.getElementById('adminEditEmployee').value=employeeId;document.getElementById('adminEditDate').value=date;await loadAdminAttendance();}
-    async function quickOpenSchedule(employeeId,date,status){showAdminTab('schedule',document.querySelector('#adminTabs button:nth-child(5)'));document.getElementById('adminScheduleEmployee').value=employeeId;document.getElementById('adminScheduleMonth').value=date.slice(0,7);await loadAdminScheduleCalendar();openAdminScheduleDay(date);if(status)document.getElementById('adminScheduleStatus').value=status;toggleAdminScheduleShift();}
-    async function loadAdminAttendance(){try{const r=await adminCall('adminAttendance',{employeeUserId:document.getElementById('adminEditEmployee').value,date:document.getElementById('adminEditDate').value});document.getElementById('adminAttendanceList').innerHTML=(r.events||[]).map(e=>'<div class="admin-row"><div class="admin-row-head"><div><div class="admin-row-name">'+escapeHtml(e.type)+' · '+escapeHtml(e.time)+'</div><div class="admin-meta">'+escapeHtml(e.officeName||e.officeId||'-')+'</div></div><div><button class="admin-btn secondary" onclick=\'openAdminAttendanceForm('+JSON.stringify(e)+')\'>แก้</button> <button class="admin-btn danger" onclick=\'deleteAdminAttendance('+JSON.stringify(e)+')\'>ลบ</button></div></div></div>').join('')||'<div class="admin-empty">ยังไม่มีรายการ</div>';}catch(e){showStatus(e.message,'error');}}
-    function openAdminAttendanceForm(e){adminEditingEvent=e||null;populateAdminOfficeSelects();document.getElementById('adminModalTitle').textContent=e?'แก้ Attendance':'เพิ่ม Attendance';document.getElementById('adminFormDate').value=(e&&e.date)||document.getElementById('adminEditDate').value;document.getElementById('adminFormTime').value=(e&&e.time)||'';document.getElementById('adminFormType').value=(e&&e.type)||'IN';document.getElementById('adminFormOfficeId').value=(e&&e.officeId)||'OF001';syncAdminOfficeName();document.getElementById('adminFormReason').value='';document.getElementById('adminModal').classList.add('show');}
-    function closeAdminModal(){document.getElementById('adminModal').classList.remove('show');adminEditingEvent=null;}
-    async function saveAdminAttendance(){const btn=event&&event.target;try{syncAdminOfficeName();const p={employeeUserId:document.getElementById('adminEditEmployee').value,date:document.getElementById('adminFormDate').value,time:document.getElementById('adminFormTime').value,type:document.getElementById('adminFormType').value,officeId:document.getElementById('adminFormOfficeId').value,officeName:document.getElementById('adminFormOfficeName').value,reason:document.getElementById('adminFormReason').value,row:adminEditingEvent?adminEditingEvent.row:''};if(!p.reason.trim())throw new Error('กรุณาระบุเหตุผล');setAdminBtnLoading(btn,true,'กำลังบันทึก...');showStatus('กำลังบันทึกและคำนวณใหม่...','');const r=await adminCall('adminSaveAttendance',p);closeAdminModal();applyAdminRealtimePayload(r,p.employeeUserId,p.date);showStatus('บันทึกและคำนวณใหม่แล้ว','success');await loadAdminAttendance();}catch(e){showStatus(e.message,'error');}finally{setAdminBtnLoading(btn,false);}}
-    async function deleteAdminAttendance(e){const reason=prompt('กรุณาระบุเหตุผลการลบ');if(!reason)return;if(!confirm('ยืนยันลบรายการนี้?'))return;try{await adminCall('adminDeleteAttendance',{row:e.row,employeeUserId:document.getElementById('adminEditEmployee').value,date:e.date,reason:reason});monthlyHistoryCache={};showStatus('ลบและคำนวณใหม่แล้ว','success');loadAdminAttendance();}catch(err){showStatus(err.message,'error');}}
-    function downloadExcelHtml(filename,headers,rows){let html='<html><head><meta charset="UTF-8"></head><body><table border="1"><tr>'+headers.map(h=>'<th>'+escapeHtml(h)+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+headers.map(h=>'<td>'+escapeHtml(r[h]??'')+'</td>').join('')+'</tr>').join('')+'</table></body></html>';const blob=new Blob(['\ufeff',html],{type:'application/vnd.ms-excel'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename+'.xls';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
-
-    function adminScheduleStatusLabel(value){const m={WORK:'วันทำงาน',OFF:'วันหยุด',SICK_LEAVE:'ลาป่วย',BUSINESS_LEAVE:'ลากิจ',VACATION:'ลาพักร้อน',WFH:'ทำงานจากบ้าน',HOLIDAY:'วันหยุดนักขัตฤกษ์',UNPAID_LEAVE:'ลาไม่รับค่าจ้าง'};return m[value]||value||'-';}
-    async function loadAdminScheduleCalendar(){try{const emp=document.getElementById('adminScheduleEmployee').value,month=document.getElementById('adminScheduleMonth').value;if(!emp||!month)return;showStatus('กำลังโหลดปฏิทิน...','');const r=await adminCall('adminScheduleCalendar',{employeeUserId:emp,month:month});adminScheduleData=r;renderAdminScheduleCalendar();showStatus('โหลดปฏิทินแล้ว','success');}catch(e){showStatus(e.message,'error');}}
-    function renderAdminScheduleCalendar(){const box=document.getElementById('adminScheduleCalendar');if(!adminScheduleData){box.innerHTML='<div class="admin-empty">ไม่มีข้อมูล</div>';return;}const days=adminScheduleData.days||[];let html='';const first=days.length?Number(days[0].weekday||0):0;for(let i=0;i<first;i++)html+='<div class="schedule-day empty"></div>';html+=days.map(function(d){const status=d.scheduleStatus||'WORK';const shiftText=status==='WORK'?(d.shiftId||'-'):'';return '<button type="button" class="schedule-day '+escapeHtml(status)+(d.hasAttendance?' has-attendance':'')+'" data-date="'+escapeHtml(d.date)+'"><div class="schedule-day-number">'+escapeHtml(String(d.day))+'</div><div class="schedule-day-status">'+escapeHtml(adminScheduleStatusLabel(status))+'</div><div class="schedule-day-shift">'+escapeHtml(shiftText)+'</div></button>';}).join('');box.innerHTML=html;box.querySelectorAll('.schedule-day[data-date]').forEach(function(el){el.addEventListener('click',function(){openAdminScheduleDay(el.getAttribute('data-date'));});});}
-    function openAdminScheduleDay(date){if(!adminScheduleData)return;const d=(adminScheduleData.days||[]).find(x=>x.date===date);if(!d)return;adminScheduleSelectedDay=d;document.getElementById('adminScheduleCurrent').textContent=formatThaiDate(d.date)+' · '+adminScheduleData.employee.name;document.getElementById('adminScheduleWarning').classList.toggle('hidden',!d.hasAttendance);document.getElementById('adminScheduleStatus').innerHTML=(adminScheduleData.statuses||[]).map(x=>'<option value="'+escapeHtml(x.value)+'">'+escapeHtml(x.label)+'</option>').join('');document.getElementById('adminScheduleStatus').value=d.scheduleStatus||'WORK';document.getElementById('adminScheduleShift').innerHTML=(adminScheduleData.shifts||[]).map(x=>'<option value="'+escapeHtml(x.shiftId)+'">'+escapeHtml(x.shiftId+(x.shiftName?' - '+x.shiftName:'')+(x.startTime||x.endTime?' ('+(x.startTime||'-')+'-'+(x.endTime||'-')+')':''))+'</option>').join('');document.getElementById('adminScheduleShift').value=d.shiftId||adminScheduleData.employee.defaultShiftId||'';populateAdminOfficeSelects();document.getElementById('adminScheduleOfficeId').value=d.officeId||adminScheduleData.employee.officeId||'OF001';document.getElementById('adminScheduleReason').value='';toggleAdminScheduleShift();document.getElementById('adminScheduleModal').classList.add('show');}
-    function toggleAdminScheduleShift(){const status=document.getElementById('adminScheduleStatus').value;const isWork=status==='WORK';const shift=document.getElementById('adminScheduleShift');shift.disabled=!isWork;if(!isWork)shift.value='';}
-    function closeAdminScheduleModal(){document.getElementById('adminScheduleModal').classList.remove('show');adminScheduleSelectedDay=null;}
-    async function saveAdminScheduleDay(){const btn=event&&event.target;try{if(!adminScheduleSelectedDay)throw new Error('ไม่พบวันที่ที่เลือก');const reason=document.getElementById('adminScheduleReason').value.trim();if(!reason)throw new Error('กรุณาระบุเหตุผล');const status=document.getElementById('adminScheduleStatus').value;const shift=document.getElementById('adminScheduleShift').value;if(status==='WORK'&&!shift)throw new Error('กรุณาเลือกกะการทำงาน');const employeeId=document.getElementById('adminScheduleEmployee').value;const savedDate=adminScheduleSelectedDay.date;setAdminBtnLoading(btn,true,'กำลังบันทึก...');showStatus('กำลังบันทึกและคำนวณใหม่...','');const r=await adminCall('adminSaveScheduleDay',{employeeUserId:employeeId,date:savedDate,scheduleStatus:status,shiftId:shift,officeId:document.getElementById('adminScheduleOfficeId').value,reason:reason});closeAdminScheduleModal();applyAdminRealtimePayload(r,employeeId,savedDate);showStatus('บันทึกและอัปเดตข้อมูลเรียบร้อย','success');}catch(e){showStatus(e.message,'error');}finally{setAdminBtnLoading(btn,false);}}
-    async function repairAdminScheduleMonth(){const emp=document.getElementById('adminScheduleEmployee').value,month=document.getElementById('adminScheduleMonth').value;if(!emp||!month)return showStatus('กรุณาเลือกพนักงานและเดือน','warning');const reason=prompt('ระบุเหตุผลการซ่อมตารางเดือนนี้');if(!reason)return;if(!confirm('ระบบจะสร้างตารางจาก Schedule_Template ใหม่ และเก็บวันที่ที่แก้ผ่าน LIFF Admin ไว้ ยืนยันหรือไม่?'))return;try{showStatus('กำลังซ่อมตารางและคำนวณทั้งเดือน...','');const r=await adminCall('adminRepairScheduleMonth',{employeeUserId:emp,month:month,reason:reason});if(r.calendar){adminScheduleData=r.calendar;renderAdminScheduleCalendar();}else await loadAdminScheduleCalendar();adminDailyData=null;adminPersonData=null;adminMonthlyData=null;showStatus('ซ่อมตารางเดือนเรียบร้อย','success');}catch(e){showStatus(e.message,'error');}}
-
-    function exportAdminDailyExcel(){if(!adminDailyData)return showStatus('กรุณาโหลดข้อมูลก่อน','warning');const headers=['รหัส','ชื่อ','ตาราง','สถานะ','เข้า','ออกพัก','กลับจากพัก','ออกงาน','เวลาทำงาน','ขาด','เกิน','ชดเชย','สาขา'];const rows=(adminDailyData.rows||[]).map(x=>({'รหัส':x.employeeId,'ชื่อ':x.name,'ตาราง':x.scheduleStatus,'สถานะ':x.attendanceStatus,'เข้า':x.inTime,'ออกพัก':x.breakOutTime,'กลับจากพัก':x.breakInTime,'ออกงาน':x.outTime,'เวลาทำงาน':x.workHours,'ขาด':x.shortHours,'เกิน':x.overHours,'ชดเชย':x.makeUpHours,'สาขา':x.office}));downloadExcelHtml('Attendance_Daily_'+adminDailyData.date,headers,rows);}
-    function exportAdminPersonExcel(){if(!adminPersonData)return showStatus('กรุณาโหลดข้อมูลก่อน','warning');const headers=['วันที่','สถานะ','เข้า','ออกพัก','กลับจากพัก','ออกงาน','เวลาทำงาน','ขาด','เกิน','ชดเชย'];const rows=(adminPersonData.days||[]).map(d=>({'วันที่':d.date,'สถานะ':d.statusThai,'เข้า':d.inTime,'ออกพัก':d.breakOutTime,'กลับจากพัก':d.breakInTime,'ออกงาน':d.outTime,'เวลาทำงาน':d.workHoursDisplay,'ขาด':d.shortHoursDisplay,'เกิน':d.overHoursDisplay,'ชดเชย':d.makeUpHoursDisplay}));downloadExcelHtml('Attendance_Employee_'+document.getElementById('adminPersonMonth').value,headers,rows);}
-    function exportAdminMonthlyExcel(){if(!adminMonthlyData)return showStatus('กรุณาโหลดข้อมูลก่อน','warning');downloadExcelHtml('Attendance_Monthly_'+adminMonthlyData.month,adminMonthlyData.headers||[],adminMonthlyData.rows||[]);}
-
-  </script>
 </body>
 </html>
